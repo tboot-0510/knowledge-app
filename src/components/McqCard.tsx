@@ -1,4 +1,7 @@
-import type { AttemptResult, Question } from "../types";
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import type { AttemptResult, Difficulty, FollowupMode, Question } from "../types";
+import { askFollowup } from "../lib/ipc";
 
 interface Props {
   question: Question;
@@ -9,8 +12,50 @@ interface Props {
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
+function tierOf(difficulty: number): Difficulty {
+  if (difficulty <= 1) return "easy";
+  if (difficulty === 2) return "medium";
+  if (difficulty <= 4) return "hard";
+  return "advanced";
+}
+
+const TIER_COLOR: Record<Difficulty, string> = {
+  easy: "bg-emerald-500/15 text-emerald-300",
+  medium: "bg-sky-500/15 text-sky-300",
+  hard: "bg-amber-500/15 text-amber-300",
+  advanced: "bg-rose-500/15 text-rose-300",
+};
+
 export default function McqCard({ question, index, result, onAnswer }: Props) {
   const answered = result !== undefined;
+  const tier = tierOf(question.difficulty);
+
+  // Follow-up interaction state (local to this question).
+  const [followup, setFollowup] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [custom, setCustom] = useState("");
+  const [showAsk, setShowAsk] = useState(false);
+
+  async function run(mode: FollowupMode, userQuery?: string) {
+    if (busy) return;
+    setBusy(true);
+    setFollowup("");
+    try {
+      await askFollowup(
+        question.id,
+        mode,
+        (chunk) => {
+          if (chunk.kind === "token") setFollowup((p) => p + chunk.text);
+          else if (chunk.kind === "error") setFollowup((p) => p + `\n\n_${chunk.message}_`);
+        },
+        userQuery,
+      );
+    } catch (e) {
+      setFollowup(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function choiceClass(i: number): string {
     if (!answered) {
@@ -31,7 +76,10 @@ export default function McqCard({ question, index, result, onAnswer }: Props) {
         <span className="mt-0.5 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300">
           Q{index + 1}
         </span>
-        <p className="text-sm leading-relaxed text-slate-100">{question.prompt}</p>
+        <p className="flex-1 text-sm leading-relaxed text-slate-100">{question.prompt}</p>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] capitalize ${TIER_COLOR[tier]}`}>
+          {tier}
+        </span>
       </div>
       <div className="flex flex-col gap-2">
         {question.choices.map((choice, i) => (
@@ -56,6 +104,70 @@ export default function McqCard({ question, index, result, onAnswer }: Props) {
           {result!.explanation}
         </div>
       )}
+
+      {/* Follow-up actions, powered by the local LLM. */}
+      {answered && (
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
+            <FollowBtn disabled={busy} onClick={() => run("explain")}>
+              💡 Explain in depth
+            </FollowBtn>
+            <FollowBtn disabled={busy} onClick={() => run("followup")}>
+              ➕ Follow-up question
+            </FollowBtn>
+            <FollowBtn disabled={busy} onClick={() => setShowAsk((s) => !s)}>
+              💬 Ask your own
+            </FollowBtn>
+          </div>
+
+          {showAsk && (
+            <div className="flex gap-2">
+              <input
+                value={custom}
+                onChange={(e) => setCustom(e.target.value)}
+                placeholder="Ask anything about this concept…"
+                onKeyDown={(e) =>
+                  e.key === "Enter" && custom.trim() && run("custom", custom.trim())
+                }
+                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs outline-none focus:border-accent/60"
+              />
+              <button
+                disabled={busy || !custom.trim()}
+                onClick={() => run("custom", custom.trim())}
+                className="rounded-lg bg-accent/20 px-3 py-1.5 text-xs font-medium text-accent disabled:opacity-50"
+              >
+                Ask
+              </button>
+            </div>
+          )}
+
+          {(followup || busy) && (
+            <div className="prose prose-invert max-w-none rounded-lg bg-ink/60 p-3 text-xs text-slate-200">
+              <ReactMarkdown>{followup || "Thinking…"}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function FollowBtn({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 transition hover:border-accent/50 hover:text-accent disabled:opacity-50"
+    >
+      {children}
+    </button>
   );
 }

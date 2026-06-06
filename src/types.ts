@@ -3,6 +3,29 @@
 
 export type Level = "senior" | "staff" | "principal";
 
+export type Difficulty = "easy" | "medium" | "hard" | "advanced";
+
+export type FollowupMode = "explain" | "followup" | "custom";
+
+export interface DifficultyStat {
+  difficulty: Difficulty;
+  correct: number;
+  total: number;
+}
+
+export interface TopicCard {
+  slug: string;
+  title: string;
+  summary: string;
+  area: string;
+  min_level: Level;
+  enabled: boolean;
+  target_difficulty: Difficulty;
+  answered: number;
+  correct: number;
+  by_difficulty: DifficultyStat[];
+}
+
 export interface Topic {
   id: number;
   slug: string;

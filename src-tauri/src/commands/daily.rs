@@ -6,7 +6,9 @@ use knowledge_core::learning::{
     build_mcq_prompt, generic_fallback, load_catalog, next_difficulty, parse_and_validate_mcqs,
     pick_topic, seed_questions, to_questions, update_streak, CatalogTopic, GeneratedMcq,
 };
-use knowledge_core::models::{AttemptResult, DailySession, ProgressStats, Settings, Streak};
+use knowledge_core::models::{
+    AttemptResult, DailySession, Difficulty, ProgressStats, Settings, Streak,
+};
 use knowledge_core::ollama::OllamaClient;
 use knowledge_core::scheduler;
 use tauri::State;
@@ -29,17 +31,36 @@ pub async fn get_today_session(state: State<'_, AppState>) -> Result<DailySessio
         let db = state.db.lock().unwrap();
         let settings = db.get_settings().map_err(|e| e.to_string())?;
         let recent = db.recent_topic_slugs(5).map_err(|e| e.to_string())?;
+        let prefs = db.topic_prefs().map_err(|e| e.to_string())?;
         let catalog = load_catalog().map_err(|e| e.to_string())?;
-        let topic = pick_topic(&catalog, settings.level, &recent)
+
+        // Restrict to topics the user has opted into (a topic with no pref, or
+        // an enabled pref, counts as selected). If none are selected, use all.
+        let enabled: Vec<CatalogTopic> = catalog
+            .iter()
+            .filter(|t| prefs.get(&t.slug).map(|p| p.enabled).unwrap_or(true))
+            .cloned()
+            .collect();
+        let pool = if enabled.is_empty() { &catalog } else { &enabled };
+
+        let topic = pick_topic(pool, settings.level, &recent)
             .cloned()
             .ok_or_else(|| "topic catalog is empty".to_string())?;
-        let stats = db.progress_stats().map_err(|e| e.to_string())?;
-        let accuracy = if stats.total_questions > 0 {
-            stats.total_correct as f32 / stats.total_questions as f32
-        } else {
-            0.5
+
+        // Difficulty: honour the user's per-topic target if set, else adapt to
+        // recent accuracy and seniority.
+        let difficulty = match prefs.get(&topic.slug) {
+            Some(p) => p.target_difficulty,
+            None => {
+                let stats = db.progress_stats().map_err(|e| e.to_string())?;
+                let accuracy = if stats.total_questions > 0 {
+                    stats.total_correct as f32 / stats.total_questions as f32
+                } else {
+                    0.5
+                };
+                Difficulty::from_numeric(next_difficulty(settings.level, accuracy))
+            }
         };
-        let difficulty = next_difficulty(settings.level, accuracy);
         (settings, topic, difficulty)
     };
 
@@ -78,7 +99,7 @@ pub async fn get_today_session(state: State<'_, AppState>) -> Result<DailySessio
 async fn generate_or_fallback(
     settings: &Settings,
     topic: &CatalogTopic,
-    difficulty: u8,
+    difficulty: Difficulty,
 ) -> (Vec<GeneratedMcq>, &'static str) {
     let client = OllamaClient::new(&settings.ollama_url);
     let prompt = build_mcq_prompt(topic, settings.level, 4, difficulty);

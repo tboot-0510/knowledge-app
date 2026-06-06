@@ -7,4 +7,5 @@ pub mod chat;
 pub mod daily;
 pub mod repo;
 pub mod settings;
+pub mod topics;
 pub mod window;

@@ -206,5 +206,96 @@
       "Creating leverage through platforms and paved roads",
       "Managing technical debt as a portfolio"
     ]
+  },
+  {
+    "slug": "blockchain-fundamentals",
+    "title": "Blockchain Fundamentals",
+    "summary": "How distributed ledgers achieve consensus, immutability, and Sybil resistance without a trusted central party.",
+    "area": "blockchain",
+    "min_level": "senior",
+    "talking_points": [
+      "Proof-of-Work vs Proof-of-Stake and Sybil resistance",
+      "Merkle trees and block/state integrity",
+      "Finality, reorgs, and the longest/heaviest chain rule",
+      "The blockchain trilemma: scalability, security, decentralization"
+    ]
+  },
+  {
+    "slug": "evm-internals",
+    "title": "EVM Internals & Gas",
+    "summary": "How the Ethereum Virtual Machine executes bytecode: the stack machine, gas metering, storage, and calls.",
+    "area": "blockchain",
+    "min_level": "staff",
+    "talking_points": [
+      "Stack-based execution and opcodes",
+      "Gas accounting and why SSTORE is expensive",
+      "Storage vs memory vs calldata",
+      "CALL vs DELEGATECALL vs STATICCALL semantics"
+    ]
+  },
+  {
+    "slug": "smart-contract-security",
+    "title": "Smart Contract Security",
+    "summary": "Common on-chain vulnerability classes and the defensive patterns that prevent them.",
+    "area": "blockchain",
+    "min_level": "staff",
+    "talking_points": [
+      "Reentrancy and the checks-effects-interactions pattern",
+      "Integer overflow and safe math",
+      "Access control and privileged functions",
+      "Oracle manipulation and MEV"
+    ]
+  },
+  {
+    "slug": "transport-protocols",
+    "title": "Transport Protocols: TCP, UDP & QUIC",
+    "summary": "How transport-layer protocols provide (or skip) reliability, ordering, and congestion control over IP.",
+    "area": "networking",
+    "min_level": "senior",
+    "talking_points": [
+      "TCP handshake, flow control, and congestion control",
+      "Head-of-line blocking and why QUIC avoids it",
+      "UDP trade-offs and when to use it",
+      "TLS 1.3 and 0-RTT over QUIC"
+    ]
+  },
+  {
+    "slug": "operating-systems",
+    "title": "Operating Systems & Scheduling",
+    "summary": "Processes, threads, virtual memory, and how the kernel schedules and isolates work.",
+    "area": "systems",
+    "min_level": "senior",
+    "talking_points": [
+      "Process vs thread and context-switch cost",
+      "Virtual memory, paging, and the page cache",
+      "Preemptive scheduling and priority inversion",
+      "System calls and user/kernel boundary"
+    ]
+  },
+  {
+    "slug": "dsa-coding-interview",
+    "title": "Data Structures & Algorithms (Coding Interview)",
+    "summary": "The algorithmic toolkit and complexity reasoning behind big-tech coding interviews.",
+    "area": "algorithms",
+    "min_level": "senior",
+    "talking_points": [
+      "Hash maps, heaps, and when each wins",
+      "Two pointers, sliding window, and binary search",
+      "Big-O of common operations and amortized analysis",
+      "Graph traversal: BFS/DFS and shortest paths"
+    ]
+  },
+  {
+    "slug": "system-design-interview",
+    "title": "System Design Interview",
+    "summary": "Structuring a scalable system design answer: requirements, estimation, data model, and trade-offs.",
+    "area": "system-design",
+    "min_level": "staff",
+    "talking_points": [
+      "Clarifying functional vs non-functional requirements",
+      "Back-of-the-envelope capacity estimation",
+      "Partitioning, replication, and consistency choices",
+      "Designing for read vs write heavy workloads"
+    ]
   }
 ]

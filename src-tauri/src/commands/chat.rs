@@ -1,7 +1,9 @@
-//! Repo Q&A (RAG) command — streams the answer token-by-token via a Channel.
+//! Streaming LLM commands: repo Q&A (RAG) and post-question follow-ups.
+//! Both stream tokens to the frontend via a Channel.
 
 use crate::state::AppState;
-use knowledge_core::models::RetrievedChunk;
+use knowledge_core::learning::build_followup_prompt;
+use knowledge_core::models::{FollowupMode, RetrievedChunk};
 use knowledge_core::ollama::{OllamaClient, StreamChunk};
 use knowledge_core::repo::search::{build_rag_prompt, top_k};
 use tauri::ipc::Channel;
@@ -65,6 +67,39 @@ pub async fn ask_repo(
     };
 
     let prompt = build_rag_prompt(&question, &retrieved);
+    let result = client
+        .generate_stream(&settings.chat_model, &prompt, |chunk| {
+            let _ = on_event.send(chunk);
+        })
+        .await;
+
+    if let Err(e) = result {
+        let _ = on_event.send(StreamChunk::Error { message: e.to_string() });
+        return Err(e.to_string());
+    }
+    Ok(())
+}
+
+/// After answering a daily question, stream a deeper explanation, an
+/// interview-style follow-up question + answer, or a reply to the user's own
+/// question — all from the local model.
+#[tauri::command]
+pub async fn ask_followup(
+    state: State<'_, AppState>,
+    question_id: i64,
+    mode: FollowupMode,
+    user_query: Option<String>,
+    on_event: Channel<StreamChunk>,
+) -> Result<(), String> {
+    let (settings, question) = {
+        let db = state.db.lock().unwrap();
+        let settings = db.get_settings().map_err(|e| e.to_string())?;
+        let question = db.get_question(question_id).map_err(|e| e.to_string())?;
+        (settings, question)
+    };
+
+    let prompt = build_followup_prompt(&question, mode, user_query.as_deref());
+    let client = OllamaClient::new(&settings.ollama_url);
     let result = client
         .generate_stream(&settings.chat_model, &prompt, |chunk| {
             let _ = on_event.send(chunk);

@@ -3,11 +3,19 @@
 A macOS desktop app, in the spirit of [thuki](https://github.com/quiet-node/thuki),
 that does two things for senior / staff / principal engineers:
 
-1. **Daily challenge popup** — each day it surfaces a topic (distributed systems,
-   concurrency, databases, system design, reliability, security, performance,
-   architecture/leadership…) and a set of **multiple‑choice questions**, tracks
-   your **streak** and per‑area accuracy, and scales difficulty to your seniority.
-2. **Repo Q&A** — link a **GitHub repository by URL**; it’s cloned and indexed
+1. **Daily challenge popup** — each day it surfaces a topic and a set of
+   **big‑tech‑interview‑style multiple‑choice questions**, tracks your **streak**
+   and accuracy, and scales difficulty to your seniority.
+2. **Topics panel** — pick the areas you want to study (blockchain, EVM, smart
+   contract security, system design, transport protocols, operating systems,
+   DS&A coding, distributed systems, concurrency, databases, reliability,
+   security, performance, leadership…), choose a target **difficulty tier**
+   (easy / medium / hard / advanced) per topic, and track your grades per topic
+   and per tier. The daily challenge draws only from your selected topics.
+3. **Follow‑ups** — after answering any question you can ask the local model to
+   **explain in depth**, pose a harder **interview‑style follow‑up**, or answer
+   **your own question** about the concept — all streamed locally.
+4. **Repo Q&A** — link a **GitHub repository by URL**; it’s cloned and indexed
    **locally**, and you can ask questions about the codebase with answers that
    cite `file:line` ranges.
 
@@ -24,7 +32,7 @@ machine.
 | Shell | **Tauri v2** | NSPanel overlay, Accessory (dock‑hidden) activation, tray menu |
 | Core logic | **Rust** (`crates/core`, no Tauri deps) | DB, Ollama client, MCQ generation/validation, RAG, scoring — **fully unit‑tested on any OS** |
 | App / IPC | **Rust** (`src-tauri`) | thin command layer + macOS platform code |
-| Frontend | **React 18 + TypeScript + Vite + Tailwind** | daily challenge, repo chat, progress, settings |
+| Frontend | **React 18 + TypeScript + Vite + Tailwind** | daily challenge, topics, repo chat, progress, settings |
 | Storage | **SQLite** (`rusqlite`, bundled) | topics, sessions, attempts, streaks, repos, chunks, embeddings |
 | Vectors | f32 BLOBs + in‑Rust cosine search | no native extension required; `sqlite-vec` is a future drop‑in |
 | LLM | **Ollama** at `127.0.0.1:11434` | chat: `llama3.1:8b` (default), embeddings: `nomic-embed-text` |

@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import DailyChallenge from "./views/DailyChallenge";
+import Topics from "./views/Topics";
 import RepoChat from "./views/RepoChat";
 import Progress from "./views/Progress";
 import Settings from "./views/Settings";
 import { onNavigate } from "./lib/ipc";
 
-type Route = "daily" | "repos" | "progress" | "settings";
+type Route = "daily" | "topics" | "repos" | "progress" | "settings";
 
 const TABS: { id: Route; label: string }[] = [
   { id: "daily", label: "Today" },
+  { id: "topics", label: "Topics" },
   { id: "repos", label: "Repos" },
   { id: "progress", label: "Progress" },
   { id: "settings", label: "Settings" },
@@ -53,6 +55,7 @@ export default function App() {
 
       <main className="min-h-0 flex-1 overflow-y-auto p-4">
         {route === "daily" && <DailyChallenge />}
+        {route === "topics" && <Topics />}
         {route === "repos" && <RepoChat />}
         {route === "progress" && <Progress />}
         {route === "settings" && <Settings />}

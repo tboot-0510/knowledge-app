@@ -207,5 +207,103 @@
       "explanation": "The strangler-fig approach wraps the legacy system and migrates capabilities piece by piece, reducing risk and delivering value continuously, until the legacy can be removed.",
       "difficulty": 3
     }
+  ],
+  "blockchain-fundamentals": [
+    {
+      "prompt": "What property does Proof-of-Work primarily provide to a permissionless blockchain?",
+      "choices": [
+        "Sybil resistance by making block production costly",
+        "Transaction privacy by encrypting balances",
+        "Instant, irreversible finality",
+        "Free, unlimited throughput"
+      ],
+      "correct_index": 0,
+      "explanation": "PoW ties block production to expended computation, so creating many fake identities to outvote the network is economically infeasible (Sybil resistance). It does not provide privacy, instant finality, or free throughput.",
+      "difficulty": 2
+    }
+  ],
+  "evm-internals": [
+    {
+      "prompt": "Why is the SSTORE opcode one of the most expensive operations in the EVM?",
+      "choices": [
+        "It mutates persistent contract storage that every node must keep in global state",
+        "It performs floating-point math",
+        "It allocates memory that is freed after the call",
+        "It reads calldata, which is unbounded"
+      ],
+      "correct_index": 0,
+      "explanation": "SSTORE writes to persistent on-chain storage replicated across all nodes forever, so its gas cost reflects that lasting state burden. Memory and calldata are transient and far cheaper.",
+      "difficulty": 4
+    }
+  ],
+  "smart-contract-security": [
+    {
+      "prompt": "Which pattern best prevents reentrancy attacks?",
+      "choices": [
+        "Checks-Effects-Interactions: update state before making external calls",
+        "Making all functions payable",
+        "Calling external contracts first to validate them",
+        "Storing secrets in private variables"
+      ],
+      "correct_index": 0,
+      "explanation": "Reentrancy exploits an external call made before internal state is updated. Updating state first (checks-effects-interactions), or using a reentrancy guard, removes the window the attacker re-enters through.",
+      "difficulty": 3
+    }
+  ],
+  "transport-protocols": [
+    {
+      "prompt": "QUIC reduces head-of-line blocking compared to TCP because:",
+      "choices": [
+        "It multiplexes independent streams so one lost packet only stalls its own stream",
+        "It disables retransmission entirely",
+        "It runs directly on Ethernet, skipping IP",
+        "It guarantees packets never arrive out of order"
+      ],
+      "correct_index": 0,
+      "explanation": "TCP delivers a single ordered byte stream, so one lost segment stalls everything behind it. QUIC carries multiple independent streams over UDP, so loss in one stream doesn't block the others.",
+      "difficulty": 3
+    }
+  ],
+  "operating-systems": [
+    {
+      "prompt": "Why is a thread context switch generally cheaper than a process context switch?",
+      "choices": [
+        "Threads in the same process share an address space, so the memory map (and often TLB) need not be fully swapped",
+        "Threads never use the CPU cache",
+        "Processes cannot be preempted",
+        "Threads run only in kernel mode"
+      ],
+      "correct_index": 0,
+      "explanation": "Threads of one process share the address space, so switching between them avoids swapping page tables and the associated TLB flush that a process switch incurs. Register/stack state still changes.",
+      "difficulty": 3
+    }
+  ],
+  "dsa-coding-interview": [
+    {
+      "prompt": "You need O(1) average lookup, insert, and delete by key. Which structure fits best?",
+      "choices": [
+        "Hash table",
+        "Sorted array",
+        "Singly linked list",
+        "Binary heap"
+      ],
+      "correct_index": 0,
+      "explanation": "A hash table gives expected O(1) for lookup/insert/delete by key. A sorted array is O(log n) search but O(n) insert/delete; a linked list is O(n) lookup; a heap is O(log n) and ordered by priority, not keyed lookup.",
+      "difficulty": 2
+    }
+  ],
+  "system-design-interview": [
+    {
+      "prompt": "What is the best FIRST step when given an open-ended system design interview prompt?",
+      "choices": [
+        "Clarify functional and non-functional requirements and scope",
+        "Start drawing database tables immediately",
+        "Pick a specific NoSQL product",
+        "Estimate the number of servers"
+      ],
+      "correct_index": 0,
+      "explanation": "Strong candidates first clarify requirements, scale, and constraints so the rest of the design is grounded. Jumping to schemas, products, or capacity before scoping is a common red flag.",
+      "difficulty": 3
+    }
   ]
 }

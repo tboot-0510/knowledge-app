@@ -42,6 +42,57 @@ impl Level {
     }
 }
 
+/// A difficulty tier for questions and per-topic targets.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Difficulty {
+    Easy,
+    #[default]
+    Medium,
+    Hard,
+    Advanced,
+}
+
+impl Difficulty {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Difficulty::Easy => "easy",
+            Difficulty::Medium => "medium",
+            Difficulty::Hard => "hard",
+            Difficulty::Advanced => "advanced",
+        }
+    }
+
+    pub fn from_str_lenient(s: &str) -> Difficulty {
+        match s.trim().to_lowercase().as_str() {
+            "easy" => Difficulty::Easy,
+            "hard" => Difficulty::Hard,
+            "advanced" => Difficulty::Advanced,
+            _ => Difficulty::Medium,
+        }
+    }
+
+    /// Map to the numeric 1..=5 scale stored on questions.
+    pub fn to_numeric(self) -> u8 {
+        match self {
+            Difficulty::Easy => 1,
+            Difficulty::Medium => 2,
+            Difficulty::Hard => 3,
+            Difficulty::Advanced => 5,
+        }
+    }
+
+    /// Bucket a numeric 1..=5 difficulty into a tier.
+    pub fn from_numeric(n: u8) -> Difficulty {
+        match n {
+            0 | 1 => Difficulty::Easy,
+            2 => Difficulty::Medium,
+            3 | 4 => Difficulty::Hard,
+            _ => Difficulty::Advanced,
+        }
+    }
+}
+
 /// A learning topic (from the curated catalog or LLM-generated).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Topic {
@@ -211,6 +262,65 @@ impl Default for Settings {
             embed_model: "nomic-embed-text".to_string(),
             schedule_hour: 9,
             ollama_url: "http://127.0.0.1:11434".to_string(),
+        }
+    }
+}
+
+/// A catalog topic the user can opt into, with their chosen target difficulty
+/// and rolled-up progress. Returned to the Topics panel.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicCard {
+    pub slug: String,
+    pub title: String,
+    pub summary: String,
+    pub area: String,
+    pub min_level: Level,
+    /// Whether the user has selected this topic to study.
+    pub enabled: bool,
+    /// The difficulty tier the user wants questions generated at.
+    pub target_difficulty: Difficulty,
+    /// Lifetime questions answered for this topic.
+    pub answered: u32,
+    /// Lifetime correct answers for this topic.
+    pub correct: u32,
+    /// Accuracy per difficulty tier, for the easy/medium/hard/advanced breakdown.
+    pub by_difficulty: Vec<DifficultyStat>,
+}
+
+/// Correct/total counts for one difficulty tier.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DifficultyStat {
+    pub difficulty: Difficulty,
+    pub correct: u32,
+    pub total: u32,
+}
+
+/// The user's selection + difficulty target for a single topic (persisted).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicPref {
+    pub slug: String,
+    pub enabled: bool,
+    pub target_difficulty: Difficulty,
+}
+
+/// How a follow-up request relates to an answered question.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FollowupMode {
+    /// Explain the concept and why each option is right/wrong, in depth.
+    Explain,
+    /// Pose and answer a harder interview-style follow-up on the same concept.
+    Followup,
+    /// Answer the user's own free-form question about the topic.
+    Custom,
+}
+
+impl FollowupMode {
+    pub fn from_str_lenient(s: &str) -> FollowupMode {
+        match s.trim().to_lowercase().as_str() {
+            "explain" => FollowupMode::Explain,
+            "custom" => FollowupMode::Custom,
+            _ => FollowupMode::Followup,
         }
     }
 }

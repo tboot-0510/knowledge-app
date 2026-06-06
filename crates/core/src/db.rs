@@ -13,6 +13,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0001_init.sql"),
     include_str!("../migrations/0002_repos.sql"),
+    include_str!("../migrations/0003_topic_prefs.sql"),
 ];
 
 /// Thin wrapper around a rusqlite connection.
@@ -154,6 +155,105 @@ impl Db {
         )?;
         let rows = stmt.query_map(params![n], |r| r.get::<_, String>(0))?;
         Ok(rows.collect::<std::result::Result<_, _>>()?)
+    }
+
+    // ---- topic preferences ----------------------------------------------
+
+    /// All saved topic preferences, keyed by slug.
+    pub fn topic_prefs(&self) -> Result<std::collections::HashMap<String, TopicPref>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT slug, enabled, target_difficulty FROM topic_prefs")?;
+        let rows = stmt.query_map([], |r| {
+            let slug: String = r.get(0)?;
+            Ok((
+                slug.clone(),
+                TopicPref {
+                    slug,
+                    enabled: r.get::<_, i64>(1)? != 0,
+                    target_difficulty: Difficulty::from_str_lenient(&r.get::<_, String>(2)?),
+                },
+            ))
+        })?;
+        let mut map = std::collections::HashMap::new();
+        for row in rows {
+            let (k, v) = row?;
+            map.insert(k, v);
+        }
+        Ok(map)
+    }
+
+    /// Upsert a single topic preference.
+    pub fn set_topic_pref(&self, pref: &TopicPref) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO topic_prefs(slug, enabled, target_difficulty) VALUES(?1,?2,?3)
+             ON CONFLICT(slug) DO UPDATE SET
+                enabled = excluded.enabled,
+                target_difficulty = excluded.target_difficulty",
+            params![
+                pref.slug,
+                pref.enabled as i64,
+                pref.target_difficulty.as_str()
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Per-topic progress, keyed by slug: (answered, correct, per-tier stats).
+    #[allow(clippy::type_complexity)]
+    pub fn progress_by_topic(
+        &self,
+    ) -> Result<std::collections::HashMap<String, (u32, u32, Vec<DifficultyStat>)>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT t.slug, q.difficulty, COALESCE(SUM(a.is_correct),0), COUNT(*)
+             FROM attempts a
+             JOIN questions q ON q.id = a.question_id
+             JOIN topics t ON t.id = q.topic_id
+             GROUP BY t.slug, q.difficulty",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, i64>(1)? as u8,
+                r.get::<_, i64>(2)? as u32,
+                r.get::<_, i64>(3)? as u32,
+            ))
+        })?;
+
+        // Accumulate into per-slug totals and per-tier buckets.
+        let mut acc: std::collections::HashMap<String, (u32, u32, std::collections::HashMap<&'static str, (u32, u32)>)> =
+            std::collections::HashMap::new();
+        for row in rows {
+            let (slug, diff_num, correct, total) = row?;
+            let tier = Difficulty::from_numeric(diff_num);
+            let entry = acc.entry(slug).or_default();
+            entry.0 += total;
+            entry.1 += correct;
+            let bucket = entry.2.entry(tier.as_str()).or_default();
+            bucket.0 += correct;
+            bucket.1 += total;
+        }
+
+        let mut out = std::collections::HashMap::new();
+        for (slug, (answered, correct, tiers)) in acc {
+            let by_difficulty = [
+                Difficulty::Easy,
+                Difficulty::Medium,
+                Difficulty::Hard,
+                Difficulty::Advanced,
+            ]
+            .into_iter()
+            .filter_map(|d| {
+                tiers.get(d.as_str()).map(|(c, t)| DifficultyStat {
+                    difficulty: d,
+                    correct: *c,
+                    total: *t,
+                })
+            })
+            .collect();
+            out.insert(slug, (answered, correct, by_difficulty));
+        }
+        Ok(out)
     }
 
     // ---- daily sessions -------------------------------------------------
@@ -573,6 +673,61 @@ mod tests {
         let blob = f32_slice_to_blob(&v);
         assert_eq!(blob.len(), v.len() * 4);
         assert_eq!(blob_to_f32_vec(&blob), v);
+    }
+
+    #[test]
+    fn topic_prefs_round_trip() {
+        let db = Db::open_in_memory().unwrap();
+        assert!(db.topic_prefs().unwrap().is_empty());
+        db.set_topic_pref(&TopicPref {
+            slug: "evm-internals".into(),
+            enabled: false,
+            target_difficulty: Difficulty::Advanced,
+        })
+        .unwrap();
+        let prefs = db.topic_prefs().unwrap();
+        let p = prefs.get("evm-internals").unwrap();
+        assert!(!p.enabled);
+        assert_eq!(p.target_difficulty, Difficulty::Advanced);
+        // upsert
+        db.set_topic_pref(&TopicPref {
+            slug: "evm-internals".into(),
+            enabled: true,
+            target_difficulty: Difficulty::Hard,
+        })
+        .unwrap();
+        assert!(db.topic_prefs().unwrap()["evm-internals"].enabled);
+    }
+
+    #[test]
+    fn progress_by_topic_buckets_by_tier() {
+        let db = Db::open_in_memory().unwrap();
+        let tid = db
+            .insert_topic("transport-protocols", "TP", "...", "networking", Level::Senior, "catalog", &[])
+            .unwrap();
+        let sid = db.create_session("2026-06-06", tid, Level::Senior).unwrap();
+        let mut q = Question {
+            id: 0,
+            topic_id: tid,
+            prompt: "Q?".into(),
+            choices: vec!["a".into(), "b".into(), "c".into(), "d".into()],
+            correct_index: 0,
+            explanation: "e".into(),
+            difficulty: 3, // Hard tier
+        };
+        let q1 = db.insert_question(sid, tid, &q).unwrap();
+        q.difficulty = 1; // Easy tier
+        let q2 = db.insert_question(sid, tid, &q).unwrap();
+        db.record_attempt(sid, q1, 0, true).unwrap();
+        db.record_attempt(sid, q2, 1, false).unwrap();
+
+        let prog = db.progress_by_topic().unwrap();
+        let (answered, correct, tiers) = prog.get("transport-protocols").unwrap();
+        assert_eq!(*answered, 2);
+        assert_eq!(*correct, 1);
+        // one Hard and one Easy bucket present
+        assert!(tiers.iter().any(|t| t.difficulty == Difficulty::Hard && t.total == 1));
+        assert!(tiers.iter().any(|t| t.difficulty == Difficulty::Easy && t.total == 1));
     }
 
     #[test]

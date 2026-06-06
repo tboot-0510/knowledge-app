@@ -5,12 +5,15 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AttemptResult,
   DailySession,
+  Difficulty,
+  FollowupMode,
   IndexProgress,
   ProgressStats,
   Repo,
   Settings,
   Streak,
   StreamChunk,
+  TopicCard,
 } from "../types";
 
 // ---- settings ----------------------------------------------------------
@@ -38,6 +41,32 @@ export const getStreak = () => invoke<Streak>("get_streak");
 export const getProgress = () => invoke<ProgressStats>("get_progress");
 export const shouldShowToday = () => invoke<boolean>("should_show_today");
 export const markShownToday = () => invoke<void>("mark_shown_today");
+
+// ---- topics ------------------------------------------------------------
+
+export const listTopics = () => invoke<TopicCard[]>("list_topics");
+export const setTopicPref = (
+  slug: string,
+  enabled: boolean,
+  targetDifficulty: Difficulty,
+) => invoke<void>("set_topic_pref", { slug, enabled, targetDifficulty });
+
+/** Stream a follow-up explanation / question for an answered MCQ. */
+export async function askFollowup(
+  questionId: number,
+  mode: FollowupMode,
+  onChunk: (chunk: StreamChunk) => void,
+  userQuery?: string,
+): Promise<void> {
+  const channel = new Channel<StreamChunk>();
+  channel.onmessage = onChunk;
+  await invoke<void>("ask_followup", {
+    questionId,
+    mode,
+    userQuery: userQuery ?? null,
+    onEvent: channel,
+  });
+}
 
 // ---- repos -------------------------------------------------------------
 

@@ -6,7 +6,7 @@
 
 use crate::error::{Error, Result};
 use crate::learning::catalog::CatalogTopic;
-use crate::models::{Level, Question};
+use crate::models::{Difficulty, Level, Question};
 use serde::Deserialize;
 
 /// Shape the model is asked to emit (per question).
@@ -29,9 +29,14 @@ struct McqEnvelope {
     questions: Vec<GeneratedMcq>,
 }
 
-/// Build the prompt that asks the local model for `n` MCQs about `topic`,
-/// calibrated to `level`, returning JSON only.
-pub fn build_mcq_prompt(topic: &CatalogTopic, level: Level, n: usize, target_difficulty: u8) -> String {
+/// Build the prompt that asks the local model for `n` interview-style MCQs about
+/// `topic`, calibrated to `level` and the target `difficulty` tier. JSON only.
+pub fn build_mcq_prompt(
+    topic: &CatalogTopic,
+    level: Level,
+    n: usize,
+    difficulty: Difficulty,
+) -> String {
     let points = if topic.talking_points.is_empty() {
         String::new()
     } else {
@@ -40,17 +45,25 @@ pub fn build_mcq_prompt(topic: &CatalogTopic, level: Level, n: usize, target_dif
             topic.talking_points.join("\n- ")
         )
     };
+    let tier_guidance = match difficulty {
+        Difficulty::Easy => "warm-up level: fundamentals a strong candidate should know cold",
+        Difficulty::Medium => "standard onsite level: applied understanding and common trade-offs",
+        Difficulty::Hard => "senior onsite level: deep trade-offs, edge cases, and failure modes",
+        Difficulty::Advanced => {
+            "staff/principal bar-raiser level: subtle distinctions experts debate"
+        }
+    };
     format!(
-        r#"You are an expert technical interviewer creating a daily learning challenge for a {level} software engineer.
+        r#"You are a senior interviewer at a top technology company (think FAANG-scale systems) writing {difficulty}-tier interview questions for a {level} software engineer.
 
 Topic: {title}
 Area: {area}
 Summary: {summary}{points}
-Write exactly {n} multiple-choice questions that deepen practical, senior-level understanding of this topic. Each question must:
-- be non-trivial and reflect real engineering trade-offs (avoid trivia and "all of the above")
-- have exactly 4 answer choices, with exactly ONE correct
-- include a concise explanation of why the correct answer is right
-- have an integer "difficulty" from 1 (easier) to 5 (hardest); aim around {target_difficulty}
+Write exactly {n} multiple-choice questions in the style asked in real big-tech technical interviews. Target {tier_guidance}. Each question must:
+- read like an interview question: practical, scenario-driven, and probing real engineering trade-offs (no trivia, no "all of the above")
+- have exactly 4 answer choices, with exactly ONE correct, and plausible distractors that reflect common misconceptions
+- include a concise explanation of why the correct answer is right and why the tempting wrong answers fail
+- have an integer "difficulty" from 1 (easier) to 5 (hardest) consistent with the {difficulty} tier
 
 Respond with ONLY valid JSON, no prose, no markdown fences, matching exactly:
 {{
@@ -64,13 +77,14 @@ Respond with ONLY valid JSON, no prose, no markdown fences, matching exactly:
     }}
   ]
 }}"#,
+        difficulty = difficulty.as_str(),
         level = level.as_str(),
         title = topic.title,
         area = topic.area,
         summary = topic.summary,
         points = points,
         n = n,
-        target_difficulty = target_difficulty,
+        tier_guidance = tier_guidance,
     )
 }
 
@@ -171,6 +185,24 @@ pub fn to_questions(topic_id: i64, mcqs: Vec<GeneratedMcq>) -> Vec<Question> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::learning::catalog::CatalogTopic;
+
+    #[test]
+    fn prompt_is_interview_style_and_tiered() {
+        let topic = CatalogTopic {
+            slug: "x".into(),
+            title: "Consensus".into(),
+            summary: "...".into(),
+            area: "distributed-systems".into(),
+            min_level: Level::Staff,
+            talking_points: vec!["Raft".into()],
+        };
+        let p = build_mcq_prompt(&topic, Level::Staff, 3, Difficulty::Advanced);
+        assert!(p.contains("interview"));
+        assert!(p.to_lowercase().contains("advanced"));
+        assert!(p.contains("exactly 3"));
+        assert!(p.contains("Raft"));
+    }
 
     const GOOD: &str = r#"{"questions":[
         {"prompt":"What does CAP describe?","choices":["a","b","c","d"],
