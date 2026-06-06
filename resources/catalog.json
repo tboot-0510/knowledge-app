@@ -1,0 +1,210 @@
+[
+  {
+    "slug": "cap-and-consistency",
+    "title": "CAP Theorem & Consistency Models",
+    "summary": "Trade-offs between consistency, availability, and partition tolerance, and the spectrum from strong to eventual consistency.",
+    "area": "distributed-systems",
+    "min_level": "senior",
+    "talking_points": [
+      "Linearizability vs sequential vs causal consistency",
+      "Why 'CA' is not achievable in a network that can partition",
+      "Tunable consistency (quorums, R+W>N)",
+      "Read-your-writes and monotonic reads session guarantees"
+    ]
+  },
+  {
+    "slug": "consensus-algorithms",
+    "title": "Consensus: Raft & Paxos",
+    "summary": "How distributed nodes agree on a single value despite failures, and the practical mechanics of leader election and log replication.",
+    "area": "distributed-systems",
+    "min_level": "staff",
+    "talking_points": [
+      "Leader election and terms in Raft",
+      "Log matching and commit safety",
+      "Quorum intersection guarantees",
+      "Why an even number of voters hurts availability"
+    ]
+  },
+  {
+    "slug": "idempotency-and-exactly-once",
+    "title": "Idempotency & Delivery Semantics",
+    "summary": "Designing APIs and message consumers that tolerate retries, and the truth behind 'exactly-once' delivery.",
+    "area": "distributed-systems",
+    "min_level": "senior",
+    "talking_points": [
+      "Idempotency keys and dedup windows",
+      "At-least-once + idempotent processing ≈ effectively-once",
+      "Outbox pattern for atomic publish",
+      "Poison messages and dead-letter queues"
+    ]
+  },
+  {
+    "slug": "concurrency-primitives",
+    "title": "Concurrency: Locks, Atomics & Memory Models",
+    "summary": "Reasoning about shared-state concurrency, data races, and the guarantees memory models provide.",
+    "area": "concurrency",
+    "min_level": "senior",
+    "talking_points": [
+      "Mutex vs RWLock vs lock-free atomics",
+      "Happens-before and acquire/release semantics",
+      "Deadlock, livelock, and lock ordering",
+      "False sharing and cache-line contention"
+    ]
+  },
+  {
+    "slug": "async-runtimes",
+    "title": "Async Runtimes & Event Loops",
+    "summary": "How async I/O, schedulers, and backpressure work under the hood across runtimes.",
+    "area": "concurrency",
+    "min_level": "senior",
+    "talking_points": [
+      "Cooperative scheduling and starving the event loop",
+      "Backpressure and bounded channels",
+      "Blocking calls inside async contexts",
+      "Work-stealing schedulers"
+    ]
+  },
+  {
+    "slug": "database-indexing",
+    "title": "Database Indexing & Query Planning",
+    "summary": "B-tree vs LSM storage, index selection, and reading query plans to fix slow queries.",
+    "area": "databases",
+    "min_level": "senior",
+    "talking_points": [
+      "B-tree vs LSM-tree write/read amplification",
+      "Covering indexes and index-only scans",
+      "Cardinality estimation and bad plans",
+      "Composite index column ordering"
+    ]
+  },
+  {
+    "slug": "transactions-isolation",
+    "title": "Transactions & Isolation Levels",
+    "summary": "ACID guarantees, isolation levels, and the anomalies each permits (and how MVCC implements them).",
+    "area": "databases",
+    "min_level": "staff",
+    "talking_points": [
+      "Read committed vs repeatable read vs serializable",
+      "Write skew and phantom reads",
+      "MVCC snapshots and vacuum",
+      "Optimistic vs pessimistic concurrency control"
+    ]
+  },
+  {
+    "slug": "api-design-evolution",
+    "title": "API Design & Evolution",
+    "summary": "Designing interfaces that are ergonomic today and evolvable tomorrow without breaking clients.",
+    "area": "system-design",
+    "min_level": "senior",
+    "talking_points": [
+      "Backward/forward compatibility and versioning strategies",
+      "Pagination, filtering, and idempotent writes",
+      "Error model and partial failure semantics",
+      "Designing for the consumer, not the database"
+    ]
+  },
+  {
+    "slug": "caching-strategies",
+    "title": "Caching Strategies & Invalidation",
+    "summary": "Where to cache, which pattern to use, and how to avoid stampedes and stale reads.",
+    "area": "system-design",
+    "min_level": "senior",
+    "talking_points": [
+      "Cache-aside vs write-through vs write-back",
+      "TTL, versioned keys, and invalidation",
+      "Thundering herd and request coalescing",
+      "Cache coherence across replicas"
+    ]
+  },
+  {
+    "slug": "rate-limiting-backpressure",
+    "title": "Rate Limiting & Load Shedding",
+    "summary": "Protecting systems under overload with limiters, queues, and graceful degradation.",
+    "area": "system-design",
+    "min_level": "staff",
+    "talking_points": [
+      "Token bucket vs leaky bucket vs sliding window",
+      "Distributed rate limiting and clock skew",
+      "Load shedding and priority queues",
+      "Circuit breakers and bulkheads"
+    ]
+  },
+  {
+    "slug": "observability-pillars",
+    "title": "Observability: Metrics, Logs & Traces",
+    "summary": "Instrumenting systems so you can answer questions you didn't anticipate at build time.",
+    "area": "reliability",
+    "min_level": "senior",
+    "talking_points": [
+      "RED/USE methods for metrics",
+      "Structured logging and cardinality cost",
+      "Distributed tracing and span context propagation",
+      "SLIs, SLOs, and error budgets"
+    ]
+  },
+  {
+    "slug": "reliability-failure-modes",
+    "title": "Reliability & Failure Modes",
+    "summary": "Designing for partial failure: timeouts, retries, hedging, and avoiding cascading failures.",
+    "area": "reliability",
+    "min_level": "staff",
+    "talking_points": [
+      "Retry storms and exponential backoff with jitter",
+      "Timeouts and deadline propagation",
+      "Cascading failures and capacity headroom",
+      "Graceful degradation and feature flags"
+    ]
+  },
+  {
+    "slug": "security-authn-authz",
+    "title": "AuthN, AuthZ & Token Security",
+    "summary": "Identity, access control models, and the security properties of tokens and sessions.",
+    "area": "security",
+    "min_level": "senior",
+    "talking_points": [
+      "OAuth2/OIDC flows and when to use each",
+      "JWT pitfalls: revocation, alg confusion, expiry",
+      "RBAC vs ABAC vs ReBAC",
+      "Principle of least privilege and scoping"
+    ]
+  },
+  {
+    "slug": "performance-profiling",
+    "title": "Performance Profiling & Optimization",
+    "summary": "Finding the real bottleneck with data before optimizing, and reasoning about latency tails.",
+    "area": "performance",
+    "min_level": "senior",
+    "talking_points": [
+      "Amdahl's law and profiling before optimizing",
+      "p50 vs p99 vs p999 tail latency",
+      "Allocation pressure and GC pauses",
+      "Mechanical sympathy: cache, branch prediction"
+    ]
+  },
+  {
+    "slug": "architecture-tradeoffs",
+    "title": "Architecture Decisions & Trade-offs",
+    "summary": "Making and documenting high-leverage architectural choices and reasoning about second-order effects.",
+    "area": "leadership",
+    "min_level": "principal",
+    "talking_points": [
+      "Reversible vs one-way-door decisions",
+      "Writing effective ADRs (Architecture Decision Records)",
+      "Conway's law and team/system boundaries",
+      "Build vs buy and total cost of ownership"
+    ]
+  },
+  {
+    "slug": "technical-strategy",
+    "title": "Technical Strategy & Influence",
+    "summary": "Driving multi-team technical direction, aligning incentives, and sequencing large migrations.",
+    "area": "leadership",
+    "min_level": "principal",
+    "talking_points": [
+      "Strangler-fig migrations and incremental delivery",
+      "Aligning technical work with business outcomes",
+      "Creating leverage through platforms and paved roads",
+      "Managing technical debt as a portfolio"
+    ]
+  }
+]

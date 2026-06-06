@@ -1,0 +1,211 @@
+{
+  "cap-and-consistency": [
+    {
+      "prompt": "During a network partition, a system chooses to keep serving reads and writes on both sides. Which CAP property is it sacrificing?",
+      "choices": ["Consistency", "Availability", "Partition tolerance", "Durability"],
+      "correct_index": 0,
+      "explanation": "Serving both sides during a partition means replicas can diverge, so the system gives up strong Consistency (it remains Available and Partition-tolerant).",
+      "difficulty": 2
+    }
+  ],
+  "consensus-algorithms": [
+    {
+      "prompt": "In Raft, why must a leader only commit log entries from its current term directly (rather than counting replicas of older-term entries)?",
+      "choices": [
+        "To avoid committing an entry that a future leader could overwrite",
+        "Because older entries are always corrupt",
+        "To reduce network traffic",
+        "Because followers cannot store old-term entries"
+      ],
+      "correct_index": 0,
+      "explanation": "Committing only current-term entries (and older ones transitively) preserves the Log Matching and Leader Completeness safety properties, preventing a committed entry from later being overwritten.",
+      "difficulty": 4
+    }
+  ],
+  "idempotency-and-exactly-once": [
+    {
+      "prompt": "A payment API receives the same request twice due to a client retry. What is the most robust way to avoid double-charging?",
+      "choices": [
+        "Require a client-supplied idempotency key and dedupe on it",
+        "Hope the network never retries",
+        "Add a random delay before processing",
+        "Reject all retried requests"
+      ],
+      "correct_index": 0,
+      "explanation": "An idempotency key lets the server detect and collapse duplicate requests so the side effect happens at most once, which is the practical foundation of 'effectively-once' processing.",
+      "difficulty": 2
+    }
+  ],
+  "concurrency-primitives": [
+    {
+      "prompt": "Two threads acquire locks A and B but in opposite orders. What failure can result?",
+      "choices": ["Deadlock", "Memory leak", "Stack overflow", "Integer overflow"],
+      "correct_index": 0,
+      "explanation": "Inconsistent lock ordering is the classic cause of deadlock: each thread holds one lock and waits forever for the other. Enforcing a global lock order prevents it.",
+      "difficulty": 2
+    }
+  ],
+  "async-runtimes": [
+    {
+      "prompt": "In a single-threaded async runtime, what happens if a task performs a long, blocking CPU computation without yielding?",
+      "choices": [
+        "It starves the event loop, delaying all other tasks",
+        "The runtime automatically moves it to another core",
+        "Nothing — async makes it non-blocking",
+        "It is killed after 1 second"
+      ],
+      "correct_index": 0,
+      "explanation": "Async cooperative scheduling relies on tasks yielding at await points. A blocking computation never yields, so the single event-loop thread cannot run any other task until it completes.",
+      "difficulty": 3
+    }
+  ],
+  "database-indexing": [
+    {
+      "prompt": "Compared to a B-tree, an LSM-tree storage engine generally offers:",
+      "choices": [
+        "Higher write throughput at the cost of read/space amplification",
+        "Lower write throughput but perfect reads",
+        "No need for compaction",
+        "Strict serializability for free"
+      ],
+      "correct_index": 0,
+      "explanation": "LSM-trees buffer writes in memory and flush sequentially, giving high write throughput, but reads may touch multiple levels and compaction adds read/space amplification.",
+      "difficulty": 3
+    }
+  ],
+  "transactions-isolation": [
+    {
+      "prompt": "Which anomaly is permitted under SNAPSHOT isolation but prevented by SERIALIZABLE?",
+      "choices": ["Write skew", "Dirty read", "Lost update on the same row", "Torn page"],
+      "correct_index": 0,
+      "explanation": "Snapshot isolation prevents dirty/non-repeatable reads but still allows write skew, where two transactions read overlapping data and write disjoint rows that together violate an invariant.",
+      "difficulty": 4
+    }
+  ],
+  "api-design-evolution": [
+    {
+      "prompt": "Which change to a JSON REST response is generally backward-compatible for existing clients?",
+      "choices": [
+        "Adding a new optional field",
+        "Renaming an existing field",
+        "Changing a field's type from string to number",
+        "Removing a field clients depend on"
+      ],
+      "correct_index": 0,
+      "explanation": "Tolerant readers ignore unknown fields, so adding an optional field is safe. Renaming, retyping, or removing fields breaks clients that read them.",
+      "difficulty": 2
+    }
+  ],
+  "caching-strategies": [
+    {
+      "prompt": "Many requests miss the cache for the same hot key at once and all hit the database. What is this called, and a good mitigation?",
+      "choices": [
+        "Thundering herd — coalesce requests or use a short lock/lease",
+        "Write skew — use serializable isolation",
+        "Split brain — add a quorum",
+        "Backpressure — drop the cache"
+      ],
+      "correct_index": 0,
+      "explanation": "The thundering herd (cache stampede) overwhelms the origin on expiry. Request coalescing, per-key locks/leases, or probabilistic early refresh prevent the pile-up.",
+      "difficulty": 3
+    }
+  ],
+  "rate-limiting-backpressure": [
+    {
+      "prompt": "A token-bucket limiter differs from a fixed-window counter mainly because it:",
+      "choices": [
+        "Allows controlled bursts while bounding the average rate",
+        "Can never allow bursts",
+        "Requires a database transaction per request",
+        "Guarantees exactly-once delivery"
+      ],
+      "correct_index": 0,
+      "explanation": "A token bucket refills at a steady rate but lets accumulated tokens be spent in a burst, smoothing the long-run average while tolerating short spikes — unlike rigid fixed windows.",
+      "difficulty": 3
+    }
+  ],
+  "observability-pillars": [
+    {
+      "prompt": "Why is high-cardinality data (e.g. user IDs) risky to put in metric labels but fine in traces/logs?",
+      "choices": [
+        "Each label combination creates a separate time series, exploding storage/cost",
+        "Metrics cannot store strings at all",
+        "Traces are always cheaper than metrics",
+        "Logs compress cardinality automatically"
+      ],
+      "correct_index": 0,
+      "explanation": "Metric backends allocate a time series per unique label-set. Unbounded cardinality causes a series explosion. Traces/logs attach such detail per-event without multiplying series.",
+      "difficulty": 3
+    }
+  ],
+  "reliability-failure-modes": [
+    {
+      "prompt": "Adding immediate, uniform client retries during a partial outage often makes things worse because:",
+      "choices": [
+        "Synchronized retries create a retry storm that amplifies load",
+        "Retries always corrupt data",
+        "Retries disable the load balancer",
+        "Retries bypass TLS"
+      ],
+      "correct_index": 0,
+      "explanation": "Without backoff and jitter, many clients retry in lockstep, multiplying load on an already-degraded service. Exponential backoff with jitter and circuit breakers prevent the storm.",
+      "difficulty": 3
+    }
+  ],
+  "security-authn-authz": [
+    {
+      "prompt": "A stateless JWT is hard to revoke before expiry primarily because:",
+      "choices": [
+        "The server does not store session state to invalidate",
+        "JWTs cannot carry an expiry claim",
+        "JWTs are always encrypted",
+        "Browsers refuse to delete them"
+      ],
+      "correct_index": 0,
+      "explanation": "Self-contained JWTs are validated by signature alone, so without server-side state (a denylist or short TTL + refresh tokens) there is nothing to revoke until the token expires.",
+      "difficulty": 3
+    }
+  ],
+  "performance-profiling": [
+    {
+      "prompt": "p50 latency looks great but users complain about slowness. Which metric should you investigate first?",
+      "choices": [
+        "Tail latency (p99/p999)",
+        "Mean CPU temperature",
+        "Total request count",
+        "p50 again, more carefully"
+      ],
+      "correct_index": 0,
+      "explanation": "User-perceived slowness usually lives in the tail. p99/p999 reveal the slow requests (often from contention, GC pauses, or retries) that the median hides.",
+      "difficulty": 2
+    }
+  ],
+  "architecture-tradeoffs": [
+    {
+      "prompt": "Per Amazon's framing, a 'one-way-door' decision should be treated how, versus a 'two-way-door' one?",
+      "choices": [
+        "Deliberated carefully because it is costly to reverse",
+        "Made as fast as possible because it is reversible",
+        "Always escalated to the CEO",
+        "Avoided entirely"
+      ],
+      "correct_index": 0,
+      "explanation": "Irreversible (one-way-door) decisions warrant more rigor and review; reversible (two-way-door) decisions should be made quickly and adjusted later. Misjudging the type wastes time or creates risk.",
+      "difficulty": 3
+    }
+  ],
+  "technical-strategy": [
+    {
+      "prompt": "The strangler-fig pattern migrates a legacy system by:",
+      "choices": [
+        "Incrementally routing slices of functionality to the new system until the old one can be retired",
+        "Rewriting everything and cutting over in one big-bang release",
+        "Freezing all development until the rewrite ships",
+        "Running two full systems forever"
+      ],
+      "correct_index": 0,
+      "explanation": "The strangler-fig approach wraps the legacy system and migrates capabilities piece by piece, reducing risk and delivering value continuously, until the legacy can be removed.",
+      "difficulty": 3
+    }
+  ]
+}

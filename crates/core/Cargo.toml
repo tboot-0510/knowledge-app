@@ -1,0 +1,27 @@
+[package]
+name = "knowledge-core"
+description = "Core logic for knowledge-app: daily learning + local-LLM repo RAG (no Tauri/UI deps)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "knowledge_core"
+path = "src/lib.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+tokio.workspace = true
+futures-util.workspace = true
+reqwest.workspace = true
+rusqlite.workspace = true
+ignore.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile = "3"

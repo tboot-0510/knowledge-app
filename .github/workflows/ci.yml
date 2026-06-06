@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  core-and-frontend:
+    name: Core tests + frontend (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Core unit tests
+        run: cargo test -p knowledge-core
+
+      - name: Core clippy
+        run: cargo clippy -p knowledge-core -- -D warnings
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Frontend install
+        run: bun install --frozen-lockfile
+
+      - name: Frontend typecheck
+        run: bun run typecheck
+
+      - name: Frontend build
+        run: bun run build
+
+  macos-build:
+    name: Build Tauri app (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Frontend install
+        run: bun install --frozen-lockfile
+
+      - name: Build app (no bundle)
+        run: cargo build -p knowledge-app
