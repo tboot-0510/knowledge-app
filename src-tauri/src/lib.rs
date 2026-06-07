@@ -60,7 +60,7 @@ pub fn run() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
-                    if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
                         commands::system::on_global_shortcut(app);
                     }
                 })

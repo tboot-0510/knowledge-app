@@ -102,9 +102,67 @@ export interface Repo {
 export interface Settings {
   level: Level;
   chat_model: string;
+  mcq_model: string;
   embed_model: string;
   schedule_hour: number;
   ollama_url: string;
+  reminders_enabled: boolean;
+  global_shortcut: string;
+}
+
+export interface ReviewItem {
+  question: Question;
+  topic_title: string;
+  due_date: string;
+}
+
+export interface FreeResponseQuestion {
+  topic_slug: string;
+  prompt: string;
+  rubric: string[];
+  max_score: number;
+}
+
+export interface FreeResponseGrade {
+  score: number;
+  max_score: number;
+  feedback: string;
+  strengths: string[];
+  gaps: string[];
+}
+
+export interface PathStep {
+  slug: string;
+  title: string;
+  answered: number;
+  correct: number;
+}
+
+export interface PathCard {
+  slug: string;
+  title: string;
+  description: string;
+  steps: PathStep[];
+  started: number;
+  total: number;
+}
+
+export interface ModelInfo {
+  name: string;
+  size_bytes: number;
+}
+
+export interface RecommendedModel {
+  name: string;
+  purpose: string;
+  note: string;
+}
+
+export interface PullProgress {
+  status: string;
+  total: number;
+  completed: number;
+  done: boolean;
 }
 
 // Streaming chunk from a repo Q&A answer.

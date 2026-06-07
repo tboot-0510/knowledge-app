@@ -15,9 +15,22 @@ that does two things for senior / staff / principal engineers:
 3. **Follow‑ups** — after answering any question you can ask the local model to
    **explain in depth**, pose a harder **interview‑style follow‑up**, or answer
    **your own question** about the concept — all streamed locally.
-4. **Repo Q&A** — link a **GitHub repository by URL**; it’s cloned and indexed
+4. **Free‑response practice** — open‑ended interview questions you answer in
+   prose, **graded by the local LLM** against a rubric (score + feedback).
+5. **Spaced repetition** — every answered question is scheduled with **SM‑2** and
+   resurfaces in a **Review** queue right before you'd forget it.
+6. **Custom topics & learning paths** — synthesize any topic from free text
+   (e.g. "Kafka internals") and follow curated **tracks** (Distributed Systems,
+   Interview Prep, Web3, Systems & Networking) with progress.
+7. **Weakness report** — turn your stats into a local‑LLM diagnosis of weak
+   areas plus a one‑week study plan.
+8. **Repo Q&A** — link a **GitHub repository by URL**; it’s cloned and indexed
    **locally**, and you can ask questions about the codebase with answers that
    cite `file:line` ranges.
+
+Plus: a built‑in **model manager** (pull/recommend Ollama models, separate fast
+model for question generation), **daily reminder notifications**, and a
+**global hotkey** to summon the popup from anywhere.
 
 **Everything runs locally.** All inference (chat + embeddings) goes through a
 local [Ollama](https://ollama.com) server — no cloud APIs, no data leaving your

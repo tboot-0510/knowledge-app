@@ -1,14 +1,33 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import type { ProgressStats } from "../types";
-import { getProgress } from "../lib/ipc";
+import { generateWeaknessReport, getProgress } from "../lib/ipc";
 
 export default function Progress() {
   const [stats, setStats] = useState<ProgressStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState("");
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     getProgress().then(setStats).catch((e) => setError(String(e)));
   }, []);
+
+  async function runReport() {
+    if (reporting) return;
+    setReporting(true);
+    setReport("");
+    try {
+      await generateWeaknessReport((chunk) => {
+        if (chunk.kind === "token") setReport((p) => p + chunk.text);
+        else if (chunk.kind === "error") setError(chunk.message);
+      });
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setReporting(false);
+    }
+  }
 
   if (error) return <p className="text-sm text-rose-300">{error}</p>;
   if (!stats) return <p className="text-sm text-slate-400">Loading…</p>;
@@ -58,6 +77,22 @@ export default function Progress() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* AI weakness report + study plan */}
+      <div className="border-t border-white/10 pt-3">
+        <button
+          onClick={runReport}
+          disabled={reporting}
+          className="rounded-lg bg-accent/20 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/30 disabled:opacity-50"
+        >
+          {reporting ? "Analyzing…" : "✨ Weakness report + study plan"}
+        </button>
+        {(report || reporting) && (
+          <div className="prose prose-invert mt-3 max-w-none rounded-lg bg-panel/60 p-3 text-sm text-slate-200">
+            <ReactMarkdown>{report || "Analyzing your progress…"}</ReactMarkdown>
           </div>
         )}
       </div>

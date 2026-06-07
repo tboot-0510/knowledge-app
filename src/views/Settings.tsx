@@ -1,14 +1,31 @@
 import { useEffect, useState } from "react";
-import type { Level, Settings as SettingsT } from "../types";
+import type {
+  Level,
+  ModelInfo,
+  PullProgress,
+  RecommendedModel,
+  Settings as SettingsT,
+} from "../types";
 import {
   checkOllamaHealth,
+  deleteModel,
   getSettings,
+  listInstalledModels,
   listOllamaModels,
+  pullModel,
+  recommendedModels,
   setDailySchedule,
+  setGlobalShortcut,
   updateSettings,
 } from "../lib/ipc";
 
 const LEVELS: Level[] = ["senior", "staff", "principal"];
+
+function formatSize(bytes: number): string {
+  if (bytes <= 0) return "";
+  const gb = bytes / 1e9;
+  return gb >= 1 ? `${gb.toFixed(1)} GB` : `${Math.round(bytes / 1e6)} MB`;
+}
 
 export default function Settings() {
   const [settings, setSettings] = useState<SettingsT | null>(null);
@@ -33,7 +50,8 @@ export default function Settings() {
   async function save() {
     if (!settings) return;
     await updateSettings(settings);
-    await setDailySchedule(settings.schedule_hour, true);
+    await setDailySchedule(settings.schedule_hour, settings.reminders_enabled);
+    await setGlobalShortcut(settings.global_shortcut);
     setSaved(true);
   }
 
@@ -70,10 +88,17 @@ export default function Settings() {
         </div>
       </Field>
 
-      <Field label="Chat model">
+      <Field label="Chat model (explanations, grading, repo Q&A)">
         <ModelInput
           value={settings.chat_model}
           onChange={(v) => patch("chat_model", v)}
+        />
+      </Field>
+
+      <Field label="MCQ model (fast daily question generation)">
+        <ModelInput
+          value={settings.mcq_model}
+          onChange={(v) => patch("mcq_model", v)}
         />
       </Field>
 
@@ -103,12 +128,39 @@ export default function Settings() {
         />
       </Field>
 
+      <Field label="Daily reminder notifications">
+        <label className="flex items-center gap-2 text-xs text-slate-300">
+          <input
+            type="checkbox"
+            checked={settings.reminders_enabled}
+            onChange={(e) => patch("reminders_enabled", e.target.checked)}
+            className="h-4 w-4 accent-[#6ea8fe]"
+          />
+          Notify me if I haven't done today's challenge
+        </label>
+      </Field>
+
+      <Field label="Global shortcut">
+        <input
+          value={settings.global_shortcut}
+          onChange={(e) => patch("global_shortcut", e.target.value)}
+          placeholder="CmdOrCtrl+Shift+K"
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-accent/60"
+        />
+        <p className="mt-1 text-[11px] text-slate-500">
+          Tauri accelerator syntax, e.g. <code>CmdOrCtrl+Shift+K</code>. Summons
+          the popup from anywhere.
+        </p>
+      </Field>
+
       <button
         onClick={save}
-        className="mt-2 rounded-lg bg-accent/20 px-4 py-2 font-medium text-accent transition hover:bg-accent/30"
+        className="mt-1 rounded-lg bg-accent/20 px-4 py-2 font-medium text-accent transition hover:bg-accent/30"
       >
         {saved ? "Saved ✓" : "Save settings"}
       </button>
+
+      <ModelManager />
 
       {/* Autocomplete source for the model inputs. */}
       <datalist id="ollama-models">
@@ -116,6 +168,127 @@ export default function Settings() {
           <option key={m} value={m} />
         ))}
       </datalist>
+    </div>
+  );
+}
+
+function ModelManager() {
+  const [installed, setInstalled] = useState<ModelInfo[]>([]);
+  const [recommended, setRecommended] = useState<RecommendedModel[]>([]);
+  const [progress, setProgress] = useState<Record<string, PullProgress>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  function refresh() {
+    listInstalledModels()
+      .then(setInstalled)
+      .catch(() => setInstalled([]));
+  }
+
+  useEffect(() => {
+    refresh();
+    recommendedModels().then(setRecommended).catch(() => setRecommended([]));
+  }, []);
+
+  const installedNames = new Set(installed.map((m) => m.name));
+
+  async function pull(name: string) {
+    setError(null);
+    try {
+      await pullModel(name, (p) =>
+        setProgress((prev) => ({ ...prev, [name]: p })),
+      );
+      setProgress((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+      refresh();
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
+  async function remove(name: string) {
+    await deleteModel(name).catch((e) => setError(String(e)));
+    refresh();
+  }
+
+  return (
+    <div className="mt-3 border-t border-white/10 pt-3">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        Model manager
+      </h3>
+
+      {installed.length > 0 && (
+        <div className="mb-3 flex flex-col gap-1.5">
+          {installed.map((m) => (
+            <div
+              key={m.name}
+              className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs"
+            >
+              <span className="font-medium text-slate-200">{m.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">{formatSize(m.size_bytes)}</span>
+                <button
+                  onClick={() => remove(m.name)}
+                  className="text-slate-500 hover:text-rose-300"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="mb-1.5 text-[11px] uppercase tracking-wider text-slate-500">
+        Recommended
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {recommended.map((r) => {
+          const p = progress[r.name];
+          const have = installedNames.has(r.name);
+          return (
+            <div
+              key={r.name}
+              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-medium text-slate-200">{r.name}</span>
+                  <span className="ml-2 text-slate-500">{r.purpose}</span>
+                </div>
+                {have ? (
+                  <span className="text-emerald-300">✓ installed</span>
+                ) : p ? (
+                  <span className="text-amber-300">
+                    {p.total > 0
+                      ? `${Math.round((p.completed / p.total) * 100)}%`
+                      : p.status}
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => pull(r.name)}
+                    className="rounded-md bg-accent/20 px-2 py-0.5 font-medium text-accent hover:bg-accent/30"
+                  >
+                    Pull
+                  </button>
+                )}
+              </div>
+              <p className="mt-0.5 text-slate-500">{r.note}</p>
+              {p && p.total > 0 && (
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full bg-accent"
+                    style={{ width: `${(p.completed / p.total) * 100}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {error && <p className="mt-2 text-[11px] text-rose-300">{error}</p>}
     </div>
   );
 }

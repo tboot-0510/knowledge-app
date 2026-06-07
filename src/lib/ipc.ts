@@ -7,9 +7,16 @@ import type {
   DailySession,
   Difficulty,
   FollowupMode,
+  FreeResponseGrade,
+  FreeResponseQuestion,
   IndexProgress,
+  ModelInfo,
+  PathCard,
   ProgressStats,
+  PullProgress,
+  RecommendedModel,
   Repo,
+  ReviewItem,
   Settings,
   Streak,
   StreamChunk,
@@ -42,7 +49,7 @@ export const getProgress = () => invoke<ProgressStats>("get_progress");
 export const shouldShowToday = () => invoke<boolean>("should_show_today");
 export const markShownToday = () => invoke<void>("mark_shown_today");
 
-// ---- topics ------------------------------------------------------------
+// ---- topics, custom topics, paths --------------------------------------
 
 export const listTopics = () => invoke<TopicCard[]>("list_topics");
 export const setTopicPref = (
@@ -50,6 +57,63 @@ export const setTopicPref = (
   enabled: boolean,
   targetDifficulty: Difficulty,
 ) => invoke<void>("set_topic_pref", { slug, enabled, targetDifficulty });
+export const addCustomTopic = (name: string) =>
+  invoke<string>("add_custom_topic", { name });
+export const deleteCustomTopic = (slug: string) =>
+  invoke<void>("delete_custom_topic", { slug });
+export const listPaths = () => invoke<PathCard[]>("list_paths");
+
+// ---- spaced repetition -------------------------------------------------
+
+export const getDueReviews = () => invoke<ReviewItem[]>("get_due_reviews");
+export const countDueReviews = () => invoke<number>("count_due_reviews");
+export const submitReview = (questionId: number, chosenIndex: number) =>
+  invoke<AttemptResult>("submit_review", { questionId, chosenIndex });
+
+// ---- free-response practice --------------------------------------------
+
+export const generateFreeResponse = (topicSlug?: string) =>
+  invoke<FreeResponseQuestion>("generate_free_response", {
+    topicSlug: topicSlug ?? null,
+  });
+export const gradeFreeResponse = (
+  question: FreeResponseQuestion,
+  answer: string,
+) => invoke<FreeResponseGrade>("grade_free_response", { question, answer });
+
+// ---- insight: weakness report ------------------------------------------
+
+export async function generateWeaknessReport(
+  onChunk: (chunk: StreamChunk) => void,
+): Promise<void> {
+  const channel = new Channel<StreamChunk>();
+  channel.onmessage = onChunk;
+  await invoke<void>("generate_weakness_report", { onEvent: channel });
+}
+
+// ---- model manager -----------------------------------------------------
+
+export const listInstalledModels = () =>
+  invoke<ModelInfo[]>("list_installed_models");
+export const recommendedModels = () =>
+  invoke<RecommendedModel[]>("recommended_models");
+export const deleteModel = (name: string) =>
+  invoke<void>("delete_model", { name });
+
+export async function pullModel(
+  name: string,
+  onProgress: (p: PullProgress) => void,
+): Promise<void> {
+  const channel = new Channel<PullProgress>();
+  channel.onmessage = onProgress;
+  await invoke<void>("pull_model", { name, onEvent: channel });
+}
+
+// ---- system: hotkey + reminders ----------------------------------------
+
+export const setGlobalShortcut = (accelerator: string) =>
+  invoke<void>("set_global_shortcut", { accelerator });
+export const sendReminderIfDue = () => invoke<boolean>("send_reminder_if_due");
 
 /** Stream a follow-up explanation / question for an answered MCQ. */
 export async function askFollowup(

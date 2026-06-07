@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Difficulty, TopicCard } from "../types";
-import { listTopics, setTopicPref } from "../lib/ipc";
+import type { Difficulty, PathCard, TopicCard } from "../types";
+import {
+  addCustomTopic,
+  listPaths,
+  listTopics,
+  setTopicPref,
+} from "../lib/ipc";
 
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "advanced"];
 
@@ -13,11 +18,34 @@ const DIFF_COLOR: Record<Difficulty, string> = {
 
 export default function Topics() {
   const [topics, setTopics] = useState<TopicCard[]>([]);
+  const [paths, setPaths] = useState<PathCard[]>([]);
+  const [customName, setCustomName] = useState("");
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function refresh() {
     listTopics().then(setTopics).catch((e) => setError(String(e)));
+    listPaths().then(setPaths).catch(() => setPaths([]));
+  }
+
+  useEffect(() => {
+    refresh();
   }, []);
+
+  async function addTopic() {
+    if (!customName.trim() || adding) return;
+    setAdding(true);
+    setError(null);
+    try {
+      await addCustomTopic(customName.trim());
+      setCustomName("");
+      refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setAdding(false);
+    }
+  }
 
   // Group topics by area for a tidy panel.
   const grouped = useMemo(() => {
@@ -53,6 +81,67 @@ export default function Topics() {
         Choose the topics you want to study and the difficulty to be quizzed at.
         Your daily challenge draws only from selected topics.
       </p>
+
+      {/* Custom topic synthesis */}
+      <div className="flex gap-2">
+        <input
+          value={customName}
+          onChange={(e) => setCustomName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTopic()}
+          placeholder="Add a custom topic, e.g. 'Kafka internals'"
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent/60"
+        />
+        <button
+          onClick={addTopic}
+          disabled={adding}
+          className="rounded-lg bg-accent/20 px-3 py-2 text-sm font-medium text-accent transition hover:bg-accent/30 disabled:opacity-50"
+        >
+          {adding ? "Synthesizing…" : "+ Add"}
+        </button>
+      </div>
+
+      {/* Learning paths */}
+      {paths.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Learning paths
+          </h3>
+          <div className="flex flex-col gap-2">
+            {paths.map((p) => {
+              const pct = p.total > 0 ? Math.round((p.started / p.total) * 100) : 0;
+              return (
+                <div key={p.slug} className="rounded-xl border border-white/10 bg-panel/60 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{p.title}</span>
+                    <span className="text-[11px] text-slate-400">
+                      {p.started}/{p.total} started
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-400">{p.description}</p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {p.steps.map((s) => (
+                      <span
+                        key={s.slug}
+                        title={`${s.correct}/${s.answered} correct`}
+                        className={`rounded px-1.5 py-0.5 text-[10px] ${
+                          s.answered > 0
+                            ? "bg-emerald-500/15 text-emerald-300"
+                            : "bg-white/5 text-slate-400"
+                        }`}
+                      >
+                        {s.title}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {grouped.map(([area, items]) => (
         <div key={area}>

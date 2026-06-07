@@ -8,7 +8,7 @@
 use crate::platform;
 use crate::state::AppState;
 use knowledge_core::scheduler;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use tauri_plugin_notification::NotificationExt;
 
