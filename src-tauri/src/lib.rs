@@ -52,19 +52,36 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             None,
         ))
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        commands::system::on_global_shortcut(app);
+                    }
+                })
+                .build(),
+        )
         .setup(|app| {
             // Resolve the per-user data directory and open the database there.
             let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
             std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
             let db = knowledge_core::db::Db::open(&data_dir.join("knowledge.db"))
                 .map_err(|e| format!("failed to open database: {e}"))?;
+
+            // Register the user's global shortcut from saved settings.
+            let shortcut = db
+                .get_settings()
+                .map(|s| s.global_shortcut)
+                .unwrap_or_else(|_| "CmdOrCtrl+Shift+K".to_string());
             app.manage(AppState::new(db, data_dir));
 
             build_tray(app)?;
+            let _ = commands::system::register_shortcut(app.handle(), &shortcut);
 
             // macOS: hide dock icon + convert main window to a floating panel.
             platform::setup(app)?;
@@ -83,6 +100,21 @@ pub fn run() {
             commands::daily::mark_shown_today,
             commands::topics::list_topics,
             commands::topics::set_topic_pref,
+            commands::topics::add_custom_topic,
+            commands::topics::delete_custom_topic,
+            commands::topics::list_paths,
+            commands::review::get_due_reviews,
+            commands::review::count_due_reviews,
+            commands::review::submit_review,
+            commands::practice::generate_free_response,
+            commands::practice::grade_free_response,
+            commands::insight::generate_weakness_report,
+            commands::models::list_installed_models,
+            commands::models::recommended_models,
+            commands::models::pull_model,
+            commands::models::delete_model,
+            commands::system::set_global_shortcut,
+            commands::system::send_reminder_if_due,
             commands::chat::ask_followup,
             commands::repo::link_repo,
             commands::repo::list_repos,

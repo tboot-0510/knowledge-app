@@ -187,6 +187,18 @@ impl OllamaClient {
         Ok(resp.response)
     }
 
+    /// Delete a locally installed model.
+    pub async fn delete_model(&self, name: &str) -> Result<()> {
+        self.http
+            .delete(format!("{}/api/delete", self.base_url))
+            .json(&json!({ "model": name }))
+            .send()
+            .await
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
+            .error_for_status()?;
+        Ok(())
+    }
+
     /// Embed a single text via `/api/embeddings`.
     pub async fn embed(&self, model: &str, text: &str) -> Result<Vec<f32>> {
         let resp = self

@@ -2,9 +2,12 @@
 //! and report streak/progress.
 
 use crate::state::AppState;
+use chrono::{Duration, NaiveDate};
+use knowledge_core::db::Db;
 use knowledge_core::learning::{
     build_mcq_prompt, generic_fallback, load_catalog, next_difficulty, parse_and_validate_mcqs,
-    pick_topic, seed_questions, to_questions, update_streak, CatalogTopic, GeneratedMcq,
+    pick_topic, quality_from_correct, seed_questions, sm2, to_questions, update_streak,
+    CatalogTopic, GeneratedMcq,
 };
 use knowledge_core::models::{
     AttemptResult, DailySession, Difficulty, ProgressStats, Settings, Streak,
@@ -12,6 +15,25 @@ use knowledge_core::models::{
 use knowledge_core::ollama::OllamaClient;
 use knowledge_core::scheduler;
 use tauri::State;
+
+/// Add `days` to a "YYYY-MM-DD" date string.
+pub(crate) fn add_days(date: &str, days: u32) -> String {
+    NaiveDate::parse_from_str(date, "%Y-%m-%d")
+        .map(|d| (d + Duration::days(days as i64)).format("%Y-%m-%d").to_string())
+        .unwrap_or_else(|_| date.to_string())
+}
+
+/// Schedule (or reschedule) a question for spaced-repetition review.
+pub(crate) fn schedule_review(db: &Db, question_id: i64, is_correct: bool) -> Result<(), String> {
+    let prev = db
+        .get_review_state(question_id)
+        .map_err(|e| e.to_string())?
+        .unwrap_or_default();
+    let next = sm2(prev, quality_from_correct(is_correct));
+    let due = add_days(&scheduler::today_local(), next.interval_days);
+    db.upsert_review(question_id, &next, &due)
+        .map_err(|e| e.to_string())
+}
 
 /// Get today's session, generating it (topic + MCQs) on first access of the day.
 #[tauri::command]
@@ -32,7 +54,9 @@ pub async fn get_today_session(state: State<'_, AppState>) -> Result<DailySessio
         let settings = db.get_settings().map_err(|e| e.to_string())?;
         let recent = db.recent_topic_slugs(5).map_err(|e| e.to_string())?;
         let prefs = db.topic_prefs().map_err(|e| e.to_string())?;
-        let catalog = load_catalog().map_err(|e| e.to_string())?;
+        let mut catalog = load_catalog().map_err(|e| e.to_string())?;
+        // Include user-synthesized custom topics in the daily pool.
+        catalog.extend(db.list_custom_topics().map_err(|e| e.to_string())?);
 
         // Restrict to topics the user has opted into (a topic with no pref, or
         // an enabled pref, counts as selected). If none are selected, use all.
@@ -103,7 +127,7 @@ async fn generate_or_fallback(
 ) -> (Vec<GeneratedMcq>, &'static str) {
     let client = OllamaClient::new(&settings.ollama_url);
     let prompt = build_mcq_prompt(topic, settings.level, 4, difficulty);
-    if let Ok(raw) = client.generate(&settings.chat_model, &prompt, true).await {
+    if let Ok(raw) = client.generate(&settings.mcq_model, &prompt, true).await {
         if let Ok(mcqs) = parse_and_validate_mcqs(&raw) {
             return (mcqs, "generated");
         }
@@ -129,6 +153,9 @@ pub fn submit_answer(
     let is_correct = chosen_index == q.correct_index;
     db.record_attempt(session_id, question_id, chosen_index, is_correct)
         .map_err(|e| e.to_string())?;
+
+    // Schedule this question for spaced-repetition review.
+    schedule_review(&db, question_id, is_correct)?;
 
     let (answered, total) = db
         .session_answer_counts(session_id)
