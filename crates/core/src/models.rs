@@ -425,3 +425,58 @@ pub struct RecommendedModel {
     pub purpose: String,
     pub note: String,
 }
+
+// ---- LeetCode-style coding practice ------------------------------------
+
+/// A data-structure / algorithm category (arrays, trees, graphs, DP, …).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DsCategory {
+    pub slug: String,
+    pub title: String,
+    pub description: String,
+}
+
+/// A category plus the user's progress, for the coding panel grid.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DsCategoryCard {
+    pub slug: String,
+    pub title: String,
+    pub description: String,
+    pub attempted: u32,
+    pub solved: u32,
+}
+
+/// A LeetCode-style coding problem (generated or from the seed bank).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodingProblem {
+    pub category_slug: String,
+    pub title: String,
+    pub prompt: String,
+    #[serde(default)]
+    pub examples: Vec<String>,
+    #[serde(default)]
+    pub constraints: Vec<String>,
+    pub difficulty: Difficulty,
+    #[serde(default)]
+    pub starter_signature: Option<String>,
+    #[serde(default)]
+    pub optimal_time: String,
+    #[serde(default)]
+    pub optimal_space: String,
+}
+
+/// The local LLM's review of a submitted solution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeReview {
+    /// "correct" | "partial" | "incorrect"
+    pub verdict: String,
+    pub score: u32,
+    pub max_score: u32,
+    pub time_complexity: String,
+    pub space_complexity: String,
+    pub correctness: String,
+    #[serde(default)]
+    pub edge_cases_missed: Vec<String>,
+    pub feedback: String,
+    pub optimal_approach: String,
+}

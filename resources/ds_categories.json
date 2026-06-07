@@ -1,0 +1,23 @@
+[
+  { "slug": "arrays-hashing", "title": "Arrays & Hashing", "description": "Array traversal, prefix sums, and hash maps/sets for O(1) lookup." },
+  { "slug": "strings", "title": "Strings", "description": "String manipulation, parsing, and character-frequency techniques." },
+  { "slug": "two-pointers", "title": "Two Pointers", "description": "Converging/parallel pointers over sorted arrays and sequences." },
+  { "slug": "sliding-window", "title": "Sliding Window", "description": "Contiguous subarray/substring optimization with a moving window." },
+  { "slug": "stack", "title": "Stack", "description": "LIFO structures: matching, monotonic stacks, and expression parsing." },
+  { "slug": "queue-deque", "title": "Queue & Deque", "description": "FIFO queues, deques, and monotonic-deque window problems." },
+  { "slug": "linked-list", "title": "Linked List", "description": "Singly/doubly linked lists, fast-slow pointers, and in-place reversal." },
+  { "slug": "binary-tree", "title": "Binary Trees", "description": "Tree traversal (DFS/BFS), depth, and path problems." },
+  { "slug": "binary-search-tree", "title": "Binary Search Trees", "description": "Ordered trees: search, insert, validation, and in-order properties." },
+  { "slug": "heap-priority-queue", "title": "Heap / Priority Queue", "description": "Min/max heaps for top-K, scheduling, and streaming medians." },
+  { "slug": "trie", "title": "Trie", "description": "Prefix trees for word lookup, autocomplete, and prefix queries." },
+  { "slug": "graphs", "title": "Graphs", "description": "BFS/DFS, connected components, topological sort, and shortest paths." },
+  { "slug": "union-find", "title": "Union-Find", "description": "Disjoint-set union with path compression for connectivity." },
+  { "slug": "backtracking", "title": "Backtracking", "description": "Systematic search of combinations, permutations, and subsets." },
+  { "slug": "dynamic-programming", "title": "Dynamic Programming", "description": "Overlapping subproblems and optimal substructure (1D/2D DP)." },
+  { "slug": "greedy", "title": "Greedy", "description": "Locally optimal choices that yield a global optimum." },
+  { "slug": "binary-search", "title": "Binary Search", "description": "Search over sorted arrays and over answer spaces." },
+  { "slug": "intervals", "title": "Intervals", "description": "Merging, inserting, and scheduling overlapping intervals." },
+  { "slug": "matrix", "title": "Matrix / 2D Grid", "description": "Grid traversal, flood fill, and in-place transformations." },
+  { "slug": "bit-manipulation", "title": "Bit Manipulation", "description": "Bitwise tricks: masks, XOR, and counting set bits." },
+  { "slug": "math-geometry", "title": "Math & Geometry", "description": "Number theory, combinatorics, and coordinate geometry." }
+]

@@ -4,8 +4,11 @@ import { invoke, Channel } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AttemptResult,
+  CodeReview,
+  CodingProblem,
   DailySession,
   Difficulty,
+  DsCategoryCard,
   FollowupMode,
   FreeResponseGrade,
   FreeResponseQuestion,
@@ -108,6 +111,21 @@ export async function pullModel(
   channel.onmessage = onProgress;
   await invoke<void>("pull_model", { name, onEvent: channel });
 }
+
+// ---- coding (LeetCode-style) -------------------------------------------
+
+export const listDsCategories = () =>
+  invoke<DsCategoryCard[]>("list_ds_categories");
+export const generateCodingProblem = (
+  categorySlug: string,
+  difficulty: Difficulty,
+) =>
+  invoke<CodingProblem>("generate_coding_problem", { categorySlug, difficulty });
+export const reviewSolution = (
+  problem: CodingProblem,
+  code: string,
+  language: string,
+) => invoke<CodeReview>("review_solution", { problem, code, language });
 
 // ---- system: hotkey + reminders ----------------------------------------
 

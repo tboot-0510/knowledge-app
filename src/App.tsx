@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DailyChallenge from "./views/DailyChallenge";
 import Topics from "./views/Topics";
 import Practice from "./views/Practice";
+import Code from "./views/Code";
 import Review from "./views/Review";
 import RepoChat from "./views/RepoChat";
 import Progress from "./views/Progress";
@@ -12,6 +13,7 @@ type Route =
   | "daily"
   | "topics"
   | "practice"
+  | "code"
   | "review"
   | "repos"
   | "progress"
@@ -21,6 +23,7 @@ const TABS: { id: Route; label: string }[] = [
   { id: "daily", label: "Today" },
   { id: "topics", label: "Topics" },
   { id: "practice", label: "Practice" },
+  { id: "code", label: "Code" },
   { id: "review", label: "Review" },
   { id: "repos", label: "Repos" },
   { id: "progress", label: "Stats" },
@@ -82,6 +85,7 @@ export default function App() {
         {route === "daily" && <DailyChallenge />}
         {route === "topics" && <Topics />}
         {route === "practice" && <Practice />}
+        {route === "code" && <Code />}
         {route === "review" && <Review />}
         {route === "repos" && <RepoChat />}
         {route === "progress" && <Progress />}

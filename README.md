@@ -24,7 +24,14 @@ that does two things for senior / staff / principal engineers:
    Interview Prep, Web3, Systems & Networking) with progress.
 7. **Weakness report** — turn your stats into a local‑LLM diagnosis of weak
    areas plus a one‑week study plan.
-8. **Repo Q&A** — link a **GitHub repository by URL**; it’s cloned and indexed
+8. **Coding practice (LeetCode‑style)** — a **Code** tab with problems across
+   every data structure (arrays/hashing, two pointers, sliding window, stacks,
+   queues, linked lists, trees, BSTs, heaps, tries, graphs, union‑find,
+   backtracking, DP, greedy, binary search, intervals, matrices, bit
+   manipulation, math). Pick a category + difficulty, write a solution in the
+   editor, and the local LLM reviews **correctness, time/space complexity, edge
+   cases, and the optimal approach**. Works offline via a bundled seed bank.
+9. **Repo Q&A** — link a **GitHub repository by URL**; it’s cloned and indexed
    **locally**, and you can ask questions about the codebase with answers that
    cite `file:line` ranges.
 

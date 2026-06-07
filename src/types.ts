@@ -165,6 +165,38 @@ export interface PullProgress {
   done: boolean;
 }
 
+export interface DsCategoryCard {
+  slug: string;
+  title: string;
+  description: string;
+  attempted: number;
+  solved: number;
+}
+
+export interface CodingProblem {
+  category_slug: string;
+  title: string;
+  prompt: string;
+  examples: string[];
+  constraints: string[];
+  difficulty: Difficulty;
+  starter_signature: string | null;
+  optimal_time: string;
+  optimal_space: string;
+}
+
+export interface CodeReview {
+  verdict: string;
+  score: number;
+  max_score: number;
+  time_complexity: string;
+  space_complexity: string;
+  correctness: string;
+  edge_cases_missed: string[];
+  feedback: string;
+  optimal_approach: string;
+}
+
 // Streaming chunk from a repo Q&A answer.
 export type StreamChunk =
   | { kind: "token"; text: string }

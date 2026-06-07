@@ -15,6 +15,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0002_repos.sql"),
     include_str!("../migrations/0003_topic_prefs.sql"),
     include_str!("../migrations/0004_practice.sql"),
+    include_str!("../migrations/0005_coding.sql"),
 ];
 
 /// Thin wrapper around a rusqlite connection.
@@ -711,6 +712,48 @@ impl Db {
         Ok(self.conn.last_insert_rowid())
     }
 
+    // ---- coding practice ------------------------------------------------
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn insert_coding_attempt(
+        &self,
+        category_slug: &str,
+        title: &str,
+        language: &str,
+        code: &str,
+        verdict: &str,
+        score: u32,
+        max_score: u32,
+    ) -> Result<i64> {
+        self.conn.execute(
+            "INSERT INTO coding_attempts(category_slug, title, language, code, verdict, score, max_score, created_at)
+             VALUES(?1,?2,?3,?4,?5,?6,?7,?8)",
+            params![category_slug, title, language, code, verdict, score as i64, max_score as i64, Utc::now().to_rfc3339()],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    /// Per-category coding progress: slug -> (attempted, solved).
+    pub fn coding_progress(&self) -> Result<std::collections::HashMap<String, (u32, u32)>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT category_slug, COUNT(*),
+                    SUM(CASE WHEN verdict = 'correct' OR (max_score > 0 AND score * 100 >= max_score * 80) THEN 1 ELSE 0 END)
+             FROM coding_attempts GROUP BY category_slug",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                (r.get::<_, i64>(1)? as u32, r.get::<_, i64>(2)? as u32),
+            ))
+        })?;
+        let mut map = std::collections::HashMap::new();
+        for row in rows {
+            let (k, v) = row?;
+            map.insert(k, v);
+        }
+        Ok(map)
+    }
+
     pub fn get_chunk(&self, chunk_id: i64) -> Result<RepoChunk> {
         self.conn
             .query_row(
@@ -854,6 +897,21 @@ mod tests {
         let due = db.due_reviews("2026-06-08", 10).unwrap();
         assert_eq!(due.len(), 1);
         assert_eq!(due[0].topic_title, "Topic");
+    }
+
+    #[test]
+    fn coding_progress_counts_solved() {
+        let db = Db::open_in_memory().unwrap();
+        db.insert_coding_attempt("graphs", "Islands", "python", "code", "correct", 9, 10)
+            .unwrap();
+        db.insert_coding_attempt("graphs", "Islands", "python", "code", "incorrect", 3, 10)
+            .unwrap();
+        // 50% score, below the 80% solved threshold
+        db.insert_coding_attempt("arrays-hashing", "Two Sum", "python", "c", "partial", 5, 10)
+            .unwrap();
+        let prog = db.coding_progress().unwrap();
+        assert_eq!(prog["graphs"], (2, 1)); // two attempts, one solved
+        assert_eq!(prog["arrays-hashing"], (1, 0));
     }
 
     #[test]

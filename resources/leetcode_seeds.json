@@ -1,0 +1,254 @@
+{
+  "arrays-hashing": [
+    {
+      "title": "Pair Sum to Target",
+      "prompt": "Given an array of integers `nums` and an integer `target`, return the indices of the two numbers that add up to `target`. Assume exactly one solution exists and you may not use the same element twice.",
+      "examples": ["nums = [2,7,11,15], target = 9 -> [0,1]", "nums = [3,2,4], target = 6 -> [1,2]"],
+      "constraints": ["2 <= nums.length <= 10^4", "Only one valid answer exists"],
+      "difficulty": "easy",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(n)",
+      "starter_signature": "def two_sum(nums: list[int], target: int) -> list[int]:"
+    }
+  ],
+  "strings": [
+    {
+      "title": "Group Anagrams",
+      "prompt": "Given an array of strings, group the strings that are anagrams of each other. Return the groups in any order.",
+      "examples": ["[\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"] -> [[\"eat\",\"tea\",\"ate\"],[\"tan\",\"nat\"],[\"bat\"]]"],
+      "constraints": ["1 <= strs.length <= 10^4", "strs[i] consists of lowercase English letters"],
+      "difficulty": "medium",
+      "optimal_time": "O(n*k)",
+      "optimal_space": "O(n*k)",
+      "starter_signature": "def group_anagrams(strs: list[str]) -> list[list[str]]:"
+    }
+  ],
+  "two-pointers": [
+    {
+      "title": "Container With Most Water",
+      "prompt": "Given an array `height` where each element is the height of a vertical line at that x-coordinate, find two lines that together with the x-axis form a container holding the most water. Return the maximum area.",
+      "examples": ["height = [1,8,6,2,5,4,8,3,7] -> 49"],
+      "constraints": ["2 <= height.length <= 10^5", "0 <= height[i] <= 10^4"],
+      "difficulty": "medium",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(1)",
+      "starter_signature": "def max_area(height: list[int]) -> int:"
+    }
+  ],
+  "sliding-window": [
+    {
+      "title": "Longest Substring Without Repeats",
+      "prompt": "Given a string `s`, find the length of the longest substring that contains no repeating characters.",
+      "examples": ["s = \"abcabcbb\" -> 3 (\"abc\")", "s = \"bbbbb\" -> 1"],
+      "constraints": ["0 <= s.length <= 5*10^4"],
+      "difficulty": "medium",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(min(n, alphabet))",
+      "starter_signature": "def length_of_longest_substring(s: str) -> int:"
+    }
+  ],
+  "stack": [
+    {
+      "title": "Valid Bracket Sequence",
+      "prompt": "Given a string containing only the characters '(){}[]', determine whether the brackets are correctly matched and nested.",
+      "examples": ["\"()[]{}\" -> true", "\"(]\" -> false", "\"([)]\" -> false"],
+      "constraints": ["1 <= s.length <= 10^4"],
+      "difficulty": "easy",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(n)",
+      "starter_signature": "def is_valid(s: str) -> bool:"
+    }
+  ],
+  "queue-deque": [
+    {
+      "title": "Sliding Window Maximum",
+      "prompt": "Given an array `nums` and a window size `k`, return a list of the maximum value in each contiguous window of size `k` as the window slides from left to right.",
+      "examples": ["nums = [1,3,-1,-3,5,3,6,7], k = 3 -> [3,3,5,5,6,7]"],
+      "constraints": ["1 <= k <= nums.length <= 10^5"],
+      "difficulty": "hard",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(k)",
+      "starter_signature": "def max_sliding_window(nums: list[int], k: int) -> list[int]:"
+    }
+  ],
+  "linked-list": [
+    {
+      "title": "Reverse a Linked List",
+      "prompt": "Given the head of a singly linked list, reverse the list in place and return the new head.",
+      "examples": ["1->2->3->4->5 -> 5->4->3->2->1"],
+      "constraints": ["The number of nodes is in the range [0, 5000]"],
+      "difficulty": "easy",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(1)",
+      "starter_signature": "def reverse_list(head: ListNode) -> ListNode:"
+    }
+  ],
+  "binary-tree": [
+    {
+      "title": "Maximum Depth of Binary Tree",
+      "prompt": "Given the root of a binary tree, return its maximum depth — the number of nodes along the longest path from the root down to a leaf.",
+      "examples": ["root = [3,9,20,null,null,15,7] -> 3"],
+      "constraints": ["The number of nodes is in the range [0, 10^4]"],
+      "difficulty": "easy",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(h)",
+      "starter_signature": "def max_depth(root: TreeNode) -> int:"
+    }
+  ],
+  "binary-search-tree": [
+    {
+      "title": "Validate a BST",
+      "prompt": "Given the root of a binary tree, determine whether it is a valid binary search tree: every node's left subtree contains only smaller keys and its right subtree only larger keys.",
+      "examples": ["[2,1,3] -> true", "[5,1,4,null,null,3,6] -> false"],
+      "constraints": ["The number of nodes is in the range [1, 10^4]"],
+      "difficulty": "medium",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(h)",
+      "starter_signature": "def is_valid_bst(root: TreeNode) -> bool:"
+    }
+  ],
+  "heap-priority-queue": [
+    {
+      "title": "Kth Largest Element",
+      "prompt": "Given an integer array `nums` and an integer `k`, return the k-th largest element in the array (k-th in sorted order, not the k-th distinct element).",
+      "examples": ["nums = [3,2,1,5,6,4], k = 2 -> 5"],
+      "constraints": ["1 <= k <= nums.length <= 10^5"],
+      "difficulty": "medium",
+      "optimal_time": "O(n log k)",
+      "optimal_space": "O(k)",
+      "starter_signature": "def find_kth_largest(nums: list[int], k: int) -> int:"
+    }
+  ],
+  "trie": [
+    {
+      "title": "Implement a Prefix Tree",
+      "prompt": "Design a trie supporting `insert(word)`, `search(word)` (exact match), and `starts_with(prefix)` (any word with the given prefix).",
+      "examples": ["insert(\"apple\"); search(\"apple\") -> true; search(\"app\") -> false; starts_with(\"app\") -> true"],
+      "constraints": ["Words and prefixes consist of lowercase English letters", "Up to 3*10^4 calls"],
+      "difficulty": "medium",
+      "optimal_time": "O(L) per op",
+      "optimal_space": "O(total characters)",
+      "starter_signature": "class Trie:\n    def __init__(self): ...\n    def insert(self, word: str) -> None: ..."
+    }
+  ],
+  "graphs": [
+    {
+      "title": "Number of Islands",
+      "prompt": "Given an m x n grid of '1' (land) and '0' (water), count the number of islands. An island is land connected horizontally or vertically.",
+      "examples": ["[[1,1,0],[0,1,0],[0,0,1]] -> 2"],
+      "constraints": ["1 <= m, n <= 300"],
+      "difficulty": "medium",
+      "optimal_time": "O(m*n)",
+      "optimal_space": "O(m*n)",
+      "starter_signature": "def num_islands(grid: list[list[str]]) -> int:"
+    }
+  ],
+  "union-find": [
+    {
+      "title": "Count Connected Components",
+      "prompt": "Given `n` nodes labeled 0..n-1 and a list of undirected edges, return the number of connected components in the graph.",
+      "examples": ["n = 5, edges = [[0,1],[1,2],[3,4]] -> 2"],
+      "constraints": ["1 <= n <= 2000", "0 <= edges.length <= n*(n-1)/2"],
+      "difficulty": "medium",
+      "optimal_time": "O(E * alpha(n))",
+      "optimal_space": "O(n)",
+      "starter_signature": "def count_components(n: int, edges: list[list[int]]) -> int:"
+    }
+  ],
+  "backtracking": [
+    {
+      "title": "Generate All Subsets",
+      "prompt": "Given an array of distinct integers, return all possible subsets (the power set) in any order, with no duplicate subsets.",
+      "examples": ["[1,2,3] -> [[],[1],[2],[3],[1,2],[1,3],[2,3],[1,2,3]]"],
+      "constraints": ["1 <= nums.length <= 10", "All elements are distinct"],
+      "difficulty": "medium",
+      "optimal_time": "O(n * 2^n)",
+      "optimal_space": "O(n)",
+      "starter_signature": "def subsets(nums: list[int]) -> list[list[int]]:"
+    }
+  ],
+  "dynamic-programming": [
+    {
+      "title": "Climbing Stairs",
+      "prompt": "You are climbing a staircase with `n` steps. Each move you may climb 1 or 2 steps. Return the number of distinct ways to reach the top.",
+      "examples": ["n = 2 -> 2", "n = 3 -> 3"],
+      "constraints": ["1 <= n <= 45"],
+      "difficulty": "easy",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(1)",
+      "starter_signature": "def climb_stairs(n: int) -> int:"
+    }
+  ],
+  "greedy": [
+    {
+      "title": "Jump Game",
+      "prompt": "Given an array `nums` where each element is the maximum jump length from that position, determine whether you can reach the last index starting from index 0.",
+      "examples": ["[2,3,1,1,4] -> true", "[3,2,1,0,4] -> false"],
+      "constraints": ["1 <= nums.length <= 10^4", "0 <= nums[i] <= 10^5"],
+      "difficulty": "medium",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(1)",
+      "starter_signature": "def can_jump(nums: list[int]) -> bool:"
+    }
+  ],
+  "binary-search": [
+    {
+      "title": "Search in Rotated Sorted Array",
+      "prompt": "Given a sorted array that has been rotated at an unknown pivot and a target value, return the index of the target or -1 if absent. Aim for O(log n).",
+      "examples": ["nums = [4,5,6,7,0,1,2], target = 0 -> 4", "target = 3 -> -1"],
+      "constraints": ["1 <= nums.length <= 5000", "All values are unique"],
+      "difficulty": "medium",
+      "optimal_time": "O(log n)",
+      "optimal_space": "O(1)",
+      "starter_signature": "def search(nums: list[int], target: int) -> int:"
+    }
+  ],
+  "intervals": [
+    {
+      "title": "Merge Intervals",
+      "prompt": "Given a list of intervals [start, end], merge all overlapping intervals and return the resulting non-overlapping intervals sorted by start.",
+      "examples": ["[[1,3],[2,6],[8,10],[15,18]] -> [[1,6],[8,10],[15,18]]"],
+      "constraints": ["1 <= intervals.length <= 10^4"],
+      "difficulty": "medium",
+      "optimal_time": "O(n log n)",
+      "optimal_space": "O(n)",
+      "starter_signature": "def merge(intervals: list[list[int]]) -> list[list[int]]:"
+    }
+  ],
+  "matrix": [
+    {
+      "title": "Rotate Image In Place",
+      "prompt": "Given an n x n matrix, rotate it 90 degrees clockwise in place (without allocating another matrix).",
+      "examples": ["[[1,2,3],[4,5,6],[7,8,9]] -> [[7,4,1],[8,5,2],[9,6,3]]"],
+      "constraints": ["1 <= n <= 20"],
+      "difficulty": "medium",
+      "optimal_time": "O(n^2)",
+      "optimal_space": "O(1)",
+      "starter_signature": "def rotate(matrix: list[list[int]]) -> None:"
+    }
+  ],
+  "bit-manipulation": [
+    {
+      "title": "Single Number",
+      "prompt": "Given a non-empty array where every element appears twice except for one, find the element that appears only once. Do it in linear time and O(1) extra space.",
+      "examples": ["[2,2,1] -> 1", "[4,1,2,1,2] -> 4"],
+      "constraints": ["1 <= nums.length <= 3*10^4", "Exactly one element appears once"],
+      "difficulty": "easy",
+      "optimal_time": "O(n)",
+      "optimal_space": "O(1)",
+      "starter_signature": "def single_number(nums: list[int]) -> int:"
+    }
+  ],
+  "math-geometry": [
+    {
+      "title": "Greatest Common Divisor",
+      "prompt": "Given two positive integers, return their greatest common divisor without using any built-in gcd function. Explain the algorithm's complexity.",
+      "examples": ["a = 12, b = 18 -> 6", "a = 7, b = 5 -> 1"],
+      "constraints": ["1 <= a, b <= 10^9"],
+      "difficulty": "easy",
+      "optimal_time": "O(log(min(a,b)))",
+      "optimal_space": "O(1)",
+      "starter_signature": "def gcd(a: int, b: int) -> int:"
+    }
+  ]
+}

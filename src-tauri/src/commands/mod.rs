@@ -4,6 +4,7 @@
 //! `lib.rs::run` via `tauri::generate_handler!`.
 
 pub mod chat;
+pub mod coding;
 pub mod daily;
 pub mod insight;
 pub mod models;
