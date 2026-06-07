@@ -1,0 +1,47 @@
+[
+  {
+    "slug": "distributed-systems-track",
+    "title": "Distributed Systems",
+    "description": "From consistency models through consensus to building reliable systems that survive partial failure.",
+    "topic_slugs": [
+      "cap-and-consistency",
+      "consensus-algorithms",
+      "idempotency-and-exactly-once",
+      "transactions-isolation",
+      "reliability-failure-modes"
+    ]
+  },
+  {
+    "slug": "interview-prep-track",
+    "title": "Big-Tech Interview Prep",
+    "description": "The core areas a senior/staff candidate is tested on across coding and system design onsites.",
+    "topic_slugs": [
+      "dsa-coding-interview",
+      "concurrency-primitives",
+      "caching-strategies",
+      "api-design-evolution",
+      "system-design-interview"
+    ]
+  },
+  {
+    "slug": "web3-track",
+    "title": "Web3 & Smart Contracts",
+    "description": "How blockchains work, how the EVM executes contracts, and how to write secure on-chain code.",
+    "topic_slugs": [
+      "blockchain-fundamentals",
+      "evm-internals",
+      "smart-contract-security"
+    ]
+  },
+  {
+    "slug": "systems-and-networking-track",
+    "title": "Systems & Networking",
+    "description": "What happens beneath your application: the OS, transport protocols, and observing it all in production.",
+    "topic_slugs": [
+      "operating-systems",
+      "transport-protocols",
+      "observability-pillars",
+      "performance-profiling"
+    ]
+  }
+]

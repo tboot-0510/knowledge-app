@@ -14,6 +14,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0001_init.sql"),
     include_str!("../migrations/0002_repos.sql"),
     include_str!("../migrations/0003_topic_prefs.sql"),
+    include_str!("../migrations/0004_practice.sql"),
 ];
 
 /// Thin wrapper around a rusqlite connection.
@@ -94,21 +95,32 @@ impl Db {
                 .map(|s| Level::from_str_lenient(&s))
                 .unwrap_or(d.level),
             chat_model: self.get_setting("chat_model")?.unwrap_or(d.chat_model),
+            mcq_model: self.get_setting("mcq_model")?.unwrap_or(d.mcq_model),
             embed_model: self.get_setting("embed_model")?.unwrap_or(d.embed_model),
             schedule_hour: self
                 .get_setting("schedule_hour")?
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(d.schedule_hour),
             ollama_url: self.get_setting("ollama_url")?.unwrap_or(d.ollama_url),
+            reminders_enabled: self
+                .get_setting("reminders_enabled")?
+                .map(|s| s != "false")
+                .unwrap_or(d.reminders_enabled),
+            global_shortcut: self
+                .get_setting("global_shortcut")?
+                .unwrap_or(d.global_shortcut),
         })
     }
 
     pub fn save_settings(&self, s: &Settings) -> Result<()> {
         self.set_setting("level", s.level.as_str())?;
         self.set_setting("chat_model", &s.chat_model)?;
+        self.set_setting("mcq_model", &s.mcq_model)?;
         self.set_setting("embed_model", &s.embed_model)?;
         self.set_setting("schedule_hour", &s.schedule_hour.to_string())?;
         self.set_setting("ollama_url", &s.ollama_url)?;
+        self.set_setting("reminders_enabled", if s.reminders_enabled { "true" } else { "false" })?;
+        self.set_setting("global_shortcut", &s.global_shortcut)?;
         Ok(())
     }
 
@@ -557,6 +569,148 @@ impl Db {
         Ok(rows.collect::<std::result::Result<_, _>>()?)
     }
 
+    // ---- spaced repetition ----------------------------------------------
+
+    pub fn get_review_state(&self, question_id: i64) -> Result<Option<ReviewState>> {
+        let row = self
+            .conn
+            .query_row(
+                "SELECT ease_factor, interval_days, repetitions FROM reviews WHERE question_id = ?1",
+                params![question_id],
+                |r| {
+                    Ok(ReviewState {
+                        ease_factor: r.get::<_, f64>(0)? as f32,
+                        interval_days: r.get::<_, i64>(1)? as u32,
+                        repetitions: r.get::<_, i64>(2)? as u32,
+                    })
+                },
+            )
+            .optional()?;
+        Ok(row)
+    }
+
+    /// Upsert a question's review schedule.
+    pub fn upsert_review(&self, question_id: i64, state: &ReviewState, due_date: &str) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO reviews(question_id, ease_factor, interval_days, repetitions, due_date, last_reviewed)
+             VALUES(?1,?2,?3,?4,?5,?6)
+             ON CONFLICT(question_id) DO UPDATE SET
+                ease_factor = excluded.ease_factor,
+                interval_days = excluded.interval_days,
+                repetitions = excluded.repetitions,
+                due_date = excluded.due_date,
+                last_reviewed = excluded.last_reviewed",
+            params![
+                question_id,
+                state.ease_factor as f64,
+                state.interval_days as i64,
+                state.repetitions as i64,
+                due_date,
+                Utc::now().to_rfc3339()
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Questions due for review on or before `today`, newest schedule first.
+    pub fn due_reviews(&self, today: &str, limit: i64) -> Result<Vec<ReviewItem>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT q.id, q.topic_id, q.prompt, q.choices_json, q.correct_index, q.explanation, q.difficulty,
+                    t.title, r.due_date
+             FROM reviews r
+             JOIN questions q ON q.id = r.question_id
+             JOIN topics t ON t.id = q.topic_id
+             WHERE r.due_date <= ?1
+             ORDER BY r.due_date ASC
+             LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![today, limit], |r| {
+            let choices: String = r.get(3)?;
+            Ok(ReviewItem {
+                question: Question {
+                    id: r.get(0)?,
+                    topic_id: r.get(1)?,
+                    prompt: r.get(2)?,
+                    choices: serde_json::from_str(&choices).unwrap_or_default(),
+                    correct_index: r.get::<_, i64>(4)? as usize,
+                    explanation: r.get(5)?,
+                    difficulty: r.get::<_, i64>(6)? as u8,
+                },
+                topic_title: r.get(7)?,
+                due_date: r.get(8)?,
+            })
+        })?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
+    }
+
+    pub fn count_due_reviews(&self, today: &str) -> Result<u32> {
+        let n: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM reviews WHERE due_date <= ?1",
+            params![today],
+            |r| r.get(0),
+        )?;
+        Ok(n as u32)
+    }
+
+    // ---- custom topics --------------------------------------------------
+
+    pub fn insert_custom_topic(&self, t: &crate::learning::catalog::CatalogTopic) -> Result<()> {
+        let tp = serde_json::to_string(&t.talking_points)?;
+        self.conn.execute(
+            "INSERT INTO custom_topics(slug, title, summary, area, min_level, talking_points, created_at)
+             VALUES(?1,?2,?3,?4,?5,?6,?7)
+             ON CONFLICT(slug) DO UPDATE SET
+                title = excluded.title, summary = excluded.summary, area = excluded.area,
+                min_level = excluded.min_level, talking_points = excluded.talking_points",
+            params![t.slug, t.title, t.summary, t.area, t.min_level.as_str(), tp, Utc::now().to_rfc3339()],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_custom_topics(&self) -> Result<Vec<crate::learning::catalog::CatalogTopic>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT slug, title, summary, area, min_level, talking_points FROM custom_topics ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            let tp: String = r.get(5)?;
+            Ok(crate::learning::catalog::CatalogTopic {
+                slug: r.get(0)?,
+                title: r.get(1)?,
+                summary: r.get(2)?,
+                area: r.get(3)?,
+                min_level: Level::from_str_lenient(&r.get::<_, String>(4)?),
+                talking_points: serde_json::from_str(&tp).unwrap_or_default(),
+            })
+        })?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
+    }
+
+    pub fn delete_custom_topic(&self, slug: &str) -> Result<()> {
+        self.conn
+            .execute("DELETE FROM custom_topics WHERE slug = ?1", params![slug])?;
+        Ok(())
+    }
+
+    // ---- free-response history ------------------------------------------
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn insert_free_response(
+        &self,
+        topic_slug: &str,
+        prompt: &str,
+        answer: &str,
+        score: u32,
+        max_score: u32,
+        feedback: &str,
+    ) -> Result<i64> {
+        self.conn.execute(
+            "INSERT INTO free_responses(topic_slug, prompt, answer, score, max_score, feedback, created_at)
+             VALUES(?1,?2,?3,?4,?5,?6,?7)",
+            params![topic_slug, prompt, answer, score as i64, max_score as i64, feedback, Utc::now().to_rfc3339()],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
     pub fn get_chunk(&self, chunk_id: i64) -> Result<RepoChunk> {
         self.conn
             .query_row(
@@ -673,6 +827,53 @@ mod tests {
         let blob = f32_slice_to_blob(&v);
         assert_eq!(blob.len(), v.len() * 4);
         assert_eq!(blob_to_f32_vec(&blob), v);
+    }
+
+    #[test]
+    fn review_schedule_and_due_queue() {
+        let db = Db::open_in_memory().unwrap();
+        let tid = db
+            .insert_topic("t", "Topic", "...", "area", Level::Senior, "catalog", &[])
+            .unwrap();
+        let sid = db.create_session("2026-06-06", tid, Level::Senior).unwrap();
+        let q = Question {
+            id: 0,
+            topic_id: tid,
+            prompt: "Q?".into(),
+            choices: vec!["a".into(), "b".into(), "c".into(), "d".into()],
+            correct_index: 0,
+            explanation: "e".into(),
+            difficulty: 2,
+        };
+        let qid = db.insert_question(sid, tid, &q).unwrap();
+        assert!(db.get_review_state(qid).unwrap().is_none());
+        db.upsert_review(qid, &ReviewState::default(), "2026-06-07").unwrap();
+        // not due yet on the 6th, due on the 7th
+        assert_eq!(db.count_due_reviews("2026-06-06").unwrap(), 0);
+        assert_eq!(db.count_due_reviews("2026-06-07").unwrap(), 1);
+        let due = db.due_reviews("2026-06-08", 10).unwrap();
+        assert_eq!(due.len(), 1);
+        assert_eq!(due[0].topic_title, "Topic");
+    }
+
+    #[test]
+    fn custom_topic_round_trip() {
+        let db = Db::open_in_memory().unwrap();
+        let topic = crate::learning::catalog::CatalogTopic {
+            slug: "webassembly".into(),
+            title: "WebAssembly".into(),
+            summary: "Portable bytecode".into(),
+            area: "systems".into(),
+            min_level: Level::Staff,
+            talking_points: vec!["wasi".into()],
+        };
+        db.insert_custom_topic(&topic).unwrap();
+        let list = db.list_custom_topics().unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].slug, "webassembly");
+        assert_eq!(list[0].min_level, Level::Staff);
+        db.delete_custom_topic("webassembly").unwrap();
+        assert!(db.list_custom_topics().unwrap().is_empty());
     }
 
     #[test]

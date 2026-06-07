@@ -5,6 +5,7 @@
 //! repo Q&A view. Pure request/response shaping; networking is via `reqwest`.
 
 use crate::error::{Error, Result};
+use crate::models::ModelInfo;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -34,6 +35,8 @@ struct TagsResponse {
 #[derive(Deserialize)]
 struct TagModel {
     name: String,
+    #[serde(default)]
+    size: u64,
 }
 
 /// One streamed token (or terminal signal) from a generation call.
@@ -43,6 +46,15 @@ pub enum StreamChunk {
     Token { text: String },
     Done,
     Error { message: String },
+}
+
+/// Progress of an `ollama pull`, streamed to the model-manager UI.
+#[derive(Debug, Clone, Serialize)]
+pub struct PullProgress {
+    pub status: String,
+    pub total: u64,
+    pub completed: u64,
+    pub done: bool,
 }
 
 impl OllamaClient {
@@ -76,6 +88,79 @@ impl OllamaClient {
             .json::<TagsResponse>()
             .await?;
         Ok(resp.models.into_iter().map(|m| m.name).collect())
+    }
+
+    /// List locally available models with their on-disk sizes.
+    pub async fn list_models_detailed(&self) -> Result<Vec<ModelInfo>> {
+        let resp = self
+            .http
+            .get(format!("{}/api/tags", self.base_url))
+            .send()
+            .await
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
+            .error_for_status()?
+            .json::<TagsResponse>()
+            .await?;
+        Ok(resp
+            .models
+            .into_iter()
+            .map(|m| ModelInfo {
+                name: m.name,
+                size_bytes: m.size,
+            })
+            .collect())
+    }
+
+    /// Pull a model from the Ollama registry, streaming progress to `on_progress`.
+    pub async fn pull_model<F>(&self, name: &str, mut on_progress: F) -> Result<()>
+    where
+        F: FnMut(PullProgress),
+    {
+        let resp = self
+            .http
+            .post(format!("{}/api/pull", self.base_url))
+            .json(&json!({ "model": name, "stream": true }))
+            .send()
+            .await
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
+            .error_for_status()?;
+
+        let mut stream = resp.bytes_stream();
+        let mut buf = String::new();
+        while let Some(item) = stream.next().await {
+            let bytes = item?;
+            buf.push_str(&String::from_utf8_lossy(&bytes));
+            while let Some(nl) = buf.find('\n') {
+                let line = buf[..nl].trim().to_string();
+                buf.drain(..=nl);
+                if line.is_empty() {
+                    continue;
+                }
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(&line) {
+                    let status = v
+                        .get("status")
+                        .and_then(|s| s.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let total = v.get("total").and_then(|t| t.as_u64()).unwrap_or(0);
+                    let completed = v.get("completed").and_then(|c| c.as_u64()).unwrap_or(0);
+                    let done = status == "success";
+                    on_progress(PullProgress {
+                        status,
+                        total,
+                        completed,
+                        done,
+                    });
+                }
+            }
+        }
+        on_progress(PullProgress {
+            status: "success".into(),
+            total: 0,
+            completed: 0,
+            done: true,
+        });
+        Ok(())
     }
 
     /// Non-streaming generation. `format_json` requests strict JSON output

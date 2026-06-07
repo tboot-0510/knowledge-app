@@ -247,11 +247,18 @@ pub struct RetrievedChunk {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub level: Level,
+    /// Model for explanations, follow-ups, grading, and repo Q&A.
     pub chat_model: String,
+    /// Smaller/faster model used for MCQ generation (falls back to chat_model).
+    pub mcq_model: String,
     pub embed_model: String,
     /// Hour of day (0..=23) at which the daily popup should fire.
     pub schedule_hour: u8,
     pub ollama_url: String,
+    /// Whether to send native daily/streak reminder notifications.
+    pub reminders_enabled: bool,
+    /// Global shortcut that summons the popup (Tauri accelerator syntax).
+    pub global_shortcut: String,
 }
 
 impl Default for Settings {
@@ -259,9 +266,12 @@ impl Default for Settings {
         Settings {
             level: Level::Senior,
             chat_model: "llama3.1:8b".to_string(),
+            mcq_model: "llama3.1:8b".to_string(),
             embed_model: "nomic-embed-text".to_string(),
             schedule_hour: 9,
             ollama_url: "http://127.0.0.1:11434".to_string(),
+            reminders_enabled: true,
+            global_shortcut: "CmdOrCtrl+Shift+K".to_string(),
         }
     }
 }
@@ -323,4 +333,95 @@ impl FollowupMode {
             _ => FollowupMode::Followup,
         }
     }
+}
+
+// ---- spaced repetition --------------------------------------------------
+
+/// SM-2 scheduling state for a single question.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct ReviewState {
+    pub ease_factor: f32,
+    pub interval_days: u32,
+    pub repetitions: u32,
+}
+
+impl Default for ReviewState {
+    fn default() -> Self {
+        ReviewState {
+            ease_factor: 2.5,
+            interval_days: 0,
+            repetitions: 0,
+        }
+    }
+}
+
+/// A question that is due for spaced-repetition review.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewItem {
+    pub question: Question,
+    pub topic_title: String,
+    pub due_date: String,
+}
+
+// ---- free-response practice --------------------------------------------
+
+/// An open-ended question generated for free-response practice.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FreeResponseQuestion {
+    pub topic_slug: String,
+    pub prompt: String,
+    pub rubric: Vec<String>,
+    pub max_score: u32,
+}
+
+/// The local LLM's grade for a free-response answer.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FreeResponseGrade {
+    pub score: u32,
+    pub max_score: u32,
+    pub feedback: String,
+    #[serde(default)]
+    pub strengths: Vec<String>,
+    #[serde(default)]
+    pub gaps: Vec<String>,
+}
+
+// ---- custom topics & learning paths ------------------------------------
+
+/// A learning path: an ordered track of topic slugs with progress.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PathCard {
+    pub slug: String,
+    pub title: String,
+    pub description: String,
+    pub steps: Vec<PathStep>,
+    /// Topics in the path that the user has answered at least one question for.
+    pub started: u32,
+    pub total: u32,
+}
+
+/// One step in a learning path (a topic), with the user's progress on it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PathStep {
+    pub slug: String,
+    pub title: String,
+    pub answered: u32,
+    pub correct: u32,
+}
+
+// ---- model management ---------------------------------------------------
+
+/// An Ollama model installed locally.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelInfo {
+    pub name: String,
+    pub size_bytes: u64,
+}
+
+/// A recommended model the user can pull from within the app.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecommendedModel {
+    pub name: String,
+    pub purpose: String,
+    pub note: String,
 }

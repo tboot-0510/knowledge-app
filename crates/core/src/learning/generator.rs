@@ -92,7 +92,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences, matching exactly:
 ///
 /// Local models often wrap JSON in ```json fences or add a sentence of preamble;
 /// this finds the outermost `{ ... }` so parsing is robust to that.
-fn extract_json_object(raw: &str) -> Option<&str> {
+pub(crate) fn extract_json_object(raw: &str) -> Option<&str> {
     let start = raw.find('{')?;
     let bytes = raw.as_bytes();
     let mut depth = 0usize;
