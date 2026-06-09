@@ -33,11 +33,17 @@ export default function Settings() {
   const [healthy, setHealthy] = useState<boolean | null>(null);
   const [saved, setSaved] = useState(false);
 
+  function refreshModels() {
+    listOllamaModels()
+      .then(setModels)
+      .catch(() => setModels([]));
+  }
+
   useEffect(() => {
     getSettings().then(setSettings);
     checkOllamaHealth()
       .then(setHealthy)
-      .then(() => listOllamaModels().then(setModels).catch(() => setModels([])));
+      .then(() => refreshModels());
   }, []);
 
   if (!settings) return <p className="text-sm text-slate-400">Loading…</p>;
@@ -89,22 +95,25 @@ export default function Settings() {
       </Field>
 
       <Field label="Chat model (explanations, grading, repo Q&A)">
-        <ModelInput
+        <ModelSelect
           value={settings.chat_model}
+          models={models}
           onChange={(v) => patch("chat_model", v)}
         />
       </Field>
 
       <Field label="MCQ model (fast daily question generation)">
-        <ModelInput
+        <ModelSelect
           value={settings.mcq_model}
+          models={models}
           onChange={(v) => patch("mcq_model", v)}
         />
       </Field>
 
       <Field label="Embedding model">
-        <ModelInput
+        <ModelSelect
           value={settings.embed_model}
+          models={models}
           onChange={(v) => patch("embed_model", v)}
         />
       </Field>
@@ -160,19 +169,12 @@ export default function Settings() {
         {saved ? "Saved ✓" : "Save settings"}
       </button>
 
-      <ModelManager />
-
-      {/* Autocomplete source for the model inputs. */}
-      <datalist id="ollama-models">
-        {models.map((m) => (
-          <option key={m} value={m} />
-        ))}
-      </datalist>
+      <ModelManager onChanged={refreshModels} />
     </div>
   );
 }
 
-function ModelManager() {
+function ModelManager({ onChanged }: { onChanged?: () => void }) {
   const [installed, setInstalled] = useState<ModelInfo[]>([]);
   const [recommended, setRecommended] = useState<RecommendedModel[]>([]);
   const [progress, setProgress] = useState<Record<string, PullProgress>>({});
@@ -182,11 +184,13 @@ function ModelManager() {
     listInstalledModels()
       .then(setInstalled)
       .catch(() => setInstalled([]));
+    onChanged?.();
   }
 
   useEffect(() => {
     refresh();
     recommendedModels().then(setRecommended).catch(() => setRecommended([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const installedNames = new Set(installed.map((m) => m.name));
@@ -304,21 +308,42 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ModelInput({
+// Thuki-style dropdown: pick from the models actually installed in Ollama.
+function ModelSelect({
   value,
+  models,
   onChange,
 }: {
   value: string;
+  models: string[];
   onChange: (v: string) => void;
 }) {
-  // Autocomplete options come from the shared <datalist id="ollama-models">.
+  const notInstalled = !!value && !models.includes(value);
   return (
-    <input
-      value={value}
-      list="ollama-models"
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-accent/60"
-      placeholder="e.g. llama3.1:8b"
-    />
+    <>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-accent/60"
+      >
+        {!value && <option value="">Select a model…</option>}
+        {notInstalled && <option value={value}>{value} (not installed)</option>}
+        {models.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+      {models.length === 0 ? (
+        <p className="mt-1 text-[11px] text-amber-300">
+          No models installed. Pull one from the model manager below.
+        </p>
+      ) : notInstalled ? (
+        <p className="mt-1 text-[11px] text-amber-300">
+          “{value}” isn’t installed — pick an installed model or pull it below to
+          avoid “model not found” errors.
+        </p>
+      ) : null}
+    </>
   );
 }

@@ -122,8 +122,8 @@ impl OllamaClient {
             .json(&json!({ "model": name, "stream": true }))
             .send()
             .await
-            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
-            .error_for_status()?;
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
+        let resp = ensure_ok(resp, name).await?;
 
         let mut stream = resp.bytes_stream();
         let mut buf = String::new();
@@ -180,22 +180,24 @@ impl OllamaClient {
             .json(&body)
             .send()
             .await
-            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
-            .error_for_status()?
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
+        let parsed = ensure_ok(resp, model)
+            .await?
             .json::<GenerateResponse>()
             .await?;
-        Ok(resp.response)
+        Ok(parsed.response)
     }
 
     /// Delete a locally installed model.
     pub async fn delete_model(&self, name: &str) -> Result<()> {
-        self.http
+        let resp = self
+            .http
             .delete(format!("{}/api/delete", self.base_url))
             .json(&json!({ "model": name }))
             .send()
             .await
-            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
-            .error_for_status()?;
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
+        ensure_ok(resp, name).await?;
         Ok(())
     }
 
@@ -207,8 +209,9 @@ impl OllamaClient {
             .json(&json!({ "model": model, "prompt": text }))
             .send()
             .await
-            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
-            .error_for_status()?
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
+        let resp = ensure_ok(resp, model)
+            .await?
             .json::<EmbeddingsResponse>()
             .await?;
         Ok(resp.embedding)
@@ -226,8 +229,8 @@ impl OllamaClient {
             .json(&json!({ "model": model, "prompt": prompt, "stream": true }))
             .send()
             .await
-            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
-            .error_for_status()?;
+            .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
+        let resp = ensure_ok(resp, model).await?;
 
         let mut stream = resp.bytes_stream();
         let mut buf = String::new();
@@ -256,6 +259,22 @@ impl OllamaClient {
         }
         on_chunk(StreamChunk::Done);
         Ok(())
+    }
+}
+
+/// Map a non-success Ollama response to a friendly error. A missing model (404,
+/// or a body mentioning "not found") becomes [`Error::ModelNotFound`]; anything
+/// else becomes [`Error::Http`] with the response body for context.
+async fn ensure_ok(resp: reqwest::Response, model: &str) -> Result<reqwest::Response> {
+    if resp.status().is_success() {
+        return Ok(resp);
+    }
+    let status = resp.status();
+    let body = resp.text().await.unwrap_or_default();
+    if status == reqwest::StatusCode::NOT_FOUND || body.to_lowercase().contains("not found") {
+        Err(Error::ModelNotFound(model.to_string()))
+    } else {
+        Err(Error::Http(format!("{status}: {body}")))
     }
 }
 

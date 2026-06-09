@@ -18,6 +18,9 @@ pub enum Error {
     #[error("ollama is not reachable at {0} — is `ollama serve` running?")]
     OllamaUnreachable(String),
 
+    #[error("model '{0}' is not installed in Ollama — pull it or pick an installed model in Settings (run `ollama pull {0}`)")]
+    ModelNotFound(String),
+
     #[error("the model response could not be parsed as valid MCQ JSON: {0}")]
     InvalidMcqJson(String),
 
