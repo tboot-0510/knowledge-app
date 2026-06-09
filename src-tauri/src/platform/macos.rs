@@ -14,7 +14,7 @@ const LAUNCH_AGENT_LABEL: &str = "com.knowledgeapp.app";
 
 /// One-time setup: hide the dock icon and convert the main window to a floating
 /// panel that can appear above other apps (mirrors thuki's overlay model).
-pub fn setup(app: &App) -> tauri::Result<()> {
+pub fn setup(app: &mut App) -> tauri::Result<()> {
     // Accessory = no Dock icon, behaves like a menu-bar/overlay utility.
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 

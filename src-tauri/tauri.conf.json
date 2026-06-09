@@ -45,10 +45,5 @@
     "shortDescription": "Daily engineering learning + local-LLM repo Q&A",
     "longDescription": "A daily popup that grows senior/staff/principal engineers with multiple-choice challenges, plus local-LLM question answering over your linked GitHub repositories. All inference runs locally via Ollama."
   },
-  "plugins": {
-    "autostart": {
-      "macAppLauncherImpl": true,
-      "args": []
-    }
-  }
+  "plugins": {}
 }
