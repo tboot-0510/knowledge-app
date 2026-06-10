@@ -53,10 +53,10 @@ export default function DailyChallenge() {
 
   if (loading) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 text-slate-400">
+      <div className="flex h-full flex-col items-center justify-center gap-3 text-neutral-500">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent/40 border-t-accent" />
         <p className="text-sm">Preparing today's challenge…</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-neutral-400">
           Generating questions with your local model.
         </p>
       </div>
@@ -65,10 +65,10 @@ export default function DailyChallenge() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+      <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-700">
         <p className="font-semibold">Couldn't load today's challenge</p>
-        <p className="mt-1 text-rose-200/80">{error}</p>
-        <p className="mt-2 text-xs text-rose-200/60">
+        <p className="mt-1 text-rose-700/80">{error}</p>
+        <p className="mt-2 text-xs text-rose-700/60">
           Make sure Ollama is running (<code>ollama serve</code>) or check Settings.
         </p>
       </div>
@@ -93,7 +93,7 @@ export default function DailyChallenge() {
         {streak && <StreakBadge streak={streak} />}
       </div>
 
-      <p className="rounded-lg bg-white/5 p-3 text-sm leading-relaxed text-slate-300">
+      <p className="rounded-lg bg-black/[0.04] p-3 text-sm leading-relaxed text-neutral-600">
         {session.topic.summary}
       </p>
 
@@ -111,10 +111,10 @@ export default function DailyChallenge() {
 
       {allAnswered && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
-          <p className="text-sm font-semibold text-emerald-200">
+          <p className="text-sm font-semibold text-emerald-700">
             Done! You scored {correctCount} / {session.questions.length}
           </p>
-          <p className="mt-1 text-xs text-emerald-200/70">
+          <p className="mt-1 text-xs text-emerald-700/70">
             Come back tomorrow to keep your streak alive.
           </p>
         </div>

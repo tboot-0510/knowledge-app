@@ -26,15 +26,15 @@ export default function Review() {
     }
   }
 
-  if (loading) return <p className="text-sm text-slate-400">Loading reviews…</p>;
-  if (error) return <p className="text-sm text-rose-300">{error}</p>;
+  if (loading) return <p className="text-sm text-neutral-500">Loading reviews…</p>;
+  if (error) return <p className="text-sm text-rose-600">{error}</p>;
 
   if (items.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-slate-400">
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-neutral-500">
         <span className="text-3xl">🧠</span>
-        <p className="text-sm font-medium text-slate-300">Nothing due for review</p>
-        <p className="max-w-xs text-xs text-slate-500">
+        <p className="text-sm font-medium text-neutral-600">Nothing due for review</p>
+        <p className="max-w-xs text-xs text-neutral-400">
           Questions you answer are scheduled with spaced repetition (SM-2) and
           resurface here right before you'd forget them.
         </p>
@@ -48,7 +48,7 @@ export default function Review() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Due for review</h2>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-neutral-500">
           {reviewed}/{items.length} reviewed
         </span>
       </div>

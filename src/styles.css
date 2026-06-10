@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -15,14 +15,63 @@ body,
 
 body {
   background: transparent;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1b1a18;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Subtle scrollbar for the overlay aesthetic. */
+/* Quiet, light scrollbar for the calm aesthetic. */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Minimal markdown styling for streamed answers (no typography plugin). */
+.md > :first-child {
+  margin-top: 0;
+}
+.md > :last-child {
+  margin-bottom: 0;
+}
+.md p {
+  margin: 0.5em 0;
+  line-height: 1.6;
+}
+.md ul,
+.md ol {
+  margin: 0.5em 0;
+  padding-left: 1.25em;
+}
+.md li {
+  margin: 0.2em 0;
+}
+.md h1,
+.md h2,
+.md h3 {
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+}
+.md code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.md pre {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.75em;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.md pre code {
+  background: none;
+  padding: 0;
 }

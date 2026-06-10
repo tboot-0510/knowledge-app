@@ -46,7 +46,7 @@ export default function Settings() {
       .then(() => refreshModels());
   }, []);
 
-  if (!settings) return <p className="text-sm text-slate-400">Loading…</p>;
+  if (!settings) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   function patch<K extends keyof SettingsT>(key: K, value: SettingsT[K]) {
     setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
@@ -67,8 +67,8 @@ export default function Settings() {
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${
             healthy
-              ? "bg-emerald-500/20 text-emerald-200"
-              : "bg-rose-500/20 text-rose-200"
+              ? "bg-emerald-500/20 text-emerald-700"
+              : "bg-rose-500/20 text-rose-700"
           }`}
         >
           <span className={`h-2 w-2 rounded-full ${healthy ? "bg-emerald-400" : "bg-rose-400"}`} />
@@ -85,7 +85,7 @@ export default function Settings() {
               className={`flex-1 rounded-lg border px-3 py-1.5 text-xs capitalize transition ${
                 settings.level === l
                   ? "border-accent/60 bg-accent/15 text-accent"
-                  : "border-white/10 bg-white/5 text-slate-300"
+                  : "border-black/[0.08] bg-black/[0.04] text-neutral-600"
               }`}
             >
               {l}
@@ -122,7 +122,7 @@ export default function Settings() {
         <input
           value={settings.ollama_url}
           onChange={(e) => patch("ollama_url", e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-accent/60"
+          className="w-full rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 outline-none focus:border-accent/60"
         />
       </Field>
 
@@ -133,17 +133,17 @@ export default function Settings() {
           max={23}
           value={settings.schedule_hour}
           onChange={(e) => patch("schedule_hour", Number(e.target.value))}
-          className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-accent/60"
+          className="w-24 rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 outline-none focus:border-accent/60"
         />
       </Field>
 
       <Field label="Daily reminder notifications">
-        <label className="flex items-center gap-2 text-xs text-slate-300">
+        <label className="flex items-center gap-2 text-xs text-neutral-600">
           <input
             type="checkbox"
             checked={settings.reminders_enabled}
             onChange={(e) => patch("reminders_enabled", e.target.checked)}
-            className="h-4 w-4 accent-[#6ea8fe]"
+            className="h-4 w-4 accent-[#4f46e5]"
           />
           Notify me if I haven't done today's challenge
         </label>
@@ -154,9 +154,9 @@ export default function Settings() {
           value={settings.global_shortcut}
           onChange={(e) => patch("global_shortcut", e.target.value)}
           placeholder="CmdOrCtrl+Shift+K"
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-accent/60"
+          className="w-full rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 outline-none focus:border-accent/60"
         />
-        <p className="mt-1 text-[11px] text-slate-500">
+        <p className="mt-1 text-[11px] text-neutral-400">
           Tauri accelerator syntax, e.g. <code>CmdOrCtrl+Shift+K</code>. Summons
           the popup from anywhere.
         </p>
@@ -218,8 +218,8 @@ function ModelManager({ onChanged }: { onChanged?: () => void }) {
   }
 
   return (
-    <div className="mt-3 border-t border-white/10 pt-3">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+    <div className="mt-3 border-t border-black/[0.08] pt-3">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
         Model manager
       </h3>
 
@@ -228,14 +228,14 @@ function ModelManager({ onChanged }: { onChanged?: () => void }) {
           {installed.map((m) => (
             <div
               key={m.name}
-              className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs"
+              className="flex items-center justify-between rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-1.5 text-xs"
             >
-              <span className="font-medium text-slate-200">{m.name}</span>
+              <span className="font-medium text-neutral-800">{m.name}</span>
               <div className="flex items-center gap-2">
-                <span className="text-slate-500">{formatSize(m.size_bytes)}</span>
+                <span className="text-neutral-400">{formatSize(m.size_bytes)}</span>
                 <button
                   onClick={() => remove(m.name)}
-                  className="text-slate-500 hover:text-rose-300"
+                  className="text-neutral-400 hover:text-rose-600"
                 >
                   ✕
                 </button>
@@ -245,7 +245,7 @@ function ModelManager({ onChanged }: { onChanged?: () => void }) {
         </div>
       )}
 
-      <p className="mb-1.5 text-[11px] uppercase tracking-wider text-slate-500">
+      <p className="mb-1.5 text-[11px] uppercase tracking-wider text-neutral-400">
         Recommended
       </p>
       <div className="flex flex-col gap-1.5">
@@ -255,17 +255,17 @@ function ModelManager({ onChanged }: { onChanged?: () => void }) {
           return (
             <div
               key={r.name}
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs"
+              className="rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-xs"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium text-slate-200">{r.name}</span>
-                  <span className="ml-2 text-slate-500">{r.purpose}</span>
+                  <span className="font-medium text-neutral-800">{r.name}</span>
+                  <span className="ml-2 text-neutral-400">{r.purpose}</span>
                 </div>
                 {have ? (
-                  <span className="text-emerald-300">✓ installed</span>
+                  <span className="text-emerald-700">✓ installed</span>
                 ) : p ? (
-                  <span className="text-amber-300">
+                  <span className="text-amber-700">
                     {p.total > 0
                       ? `${Math.round((p.completed / p.total) * 100)}%`
                       : p.status}
@@ -279,9 +279,9 @@ function ModelManager({ onChanged }: { onChanged?: () => void }) {
                   </button>
                 )}
               </div>
-              <p className="mt-0.5 text-slate-500">{r.note}</p>
+              <p className="mt-0.5 text-neutral-400">{r.note}</p>
               {p && p.total > 0 && (
-                <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/10">
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/[0.06]">
                   <div
                     className="h-full bg-accent"
                     style={{ width: `${(p.completed / p.total) * 100}%` }}
@@ -292,7 +292,7 @@ function ModelManager({ onChanged }: { onChanged?: () => void }) {
           );
         })}
       </div>
-      {error && <p className="mt-2 text-[11px] text-rose-300">{error}</p>}
+      {error && <p className="mt-2 text-[11px] text-rose-600">{error}</p>}
     </div>
   );
 }
@@ -300,7 +300,7 @@ function ModelManager({ onChanged }: { onChanged?: () => void }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-neutral-500">
         {label}
       </label>
       {children}
@@ -324,7 +324,7 @@ function ModelSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-accent/60"
+        className="w-full rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 outline-none focus:border-accent/60"
       >
         {!value && <option value="">Select a model…</option>}
         {notInstalled && <option value={value}>{value} (not installed)</option>}
@@ -335,11 +335,11 @@ function ModelSelect({
         ))}
       </select>
       {models.length === 0 ? (
-        <p className="mt-1 text-[11px] text-amber-300">
+        <p className="mt-1 text-[11px] text-amber-700">
           No models installed. Pull one from the model manager below.
         </p>
       ) : notInstalled ? (
-        <p className="mt-1 text-[11px] text-amber-300">
+        <p className="mt-1 text-[11px] text-amber-700">
           “{value}” isn’t installed — pick an installed model or pull it below to
           avoid “model not found” errors.
         </p>

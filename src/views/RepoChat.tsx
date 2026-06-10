@@ -82,7 +82,7 @@ export default function RepoChat() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://github.com/owner/repo"
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent/60"
+          className="flex-1 rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-sm outline-none focus:border-accent/60"
           onKeyDown={(e) => e.key === "Enter" && handleLink()}
         />
         <button
@@ -97,7 +97,7 @@ export default function RepoChat() {
       {/* Repo list */}
       <div className="flex flex-col gap-2">
         {repos.length === 0 && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-neutral-400">
             Link a public GitHub repo to index it locally and ask questions about it.
           </p>
         )}
@@ -111,7 +111,7 @@ export default function RepoChat() {
               className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition ${
                 selected === r.id
                   ? "border-accent/60 bg-accent/10"
-                  : "border-white/10 bg-white/5 hover:border-white/20"
+                  : "border-black/[0.08] bg-black/[0.04] hover:border-black/20"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -123,14 +123,14 @@ export default function RepoChat() {
                       e.stopPropagation();
                       deleteRepo(r.id).then(refresh);
                     }}
-                    className="text-xs text-slate-500 hover:text-rose-300"
+                    className="text-xs text-neutral-400 hover:text-rose-600"
                   >
                     ✕
                   </button>
                 </div>
               </div>
               {indexing && p && (
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
                   <div
                     className="h-full bg-accent transition-all"
                     style={{ width: `${p.total ? (p.done / p.total) * 100 : 0}%` }}
@@ -138,12 +138,12 @@ export default function RepoChat() {
                 </div>
               )}
               {r.status === "ready" && (
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className="mt-1 text-[11px] text-neutral-400">
                   {r.file_count} files · {r.chunk_count} chunks indexed
                 </p>
               )}
               {r.status === "error" && r.error && (
-                <p className="mt-1 text-[11px] text-rose-300">{r.error}</p>
+                <p className="mt-1 text-[11px] text-rose-600">{r.error}</p>
               )}
             </div>
           );
@@ -152,7 +152,7 @@ export default function RepoChat() {
 
       {/* Q&A */}
       {ready.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-white/10 pt-4">
+        <div className="flex flex-col gap-2 border-t border-black/[0.08] pt-4">
           <div className="flex gap-2">
             <input
               value={question}
@@ -164,7 +164,7 @@ export default function RepoChat() {
               }
               disabled={selected === null}
               onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent/60 disabled:opacity-50"
+              className="flex-1 rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-sm outline-none focus:border-accent/60 disabled:opacity-50"
             />
             <button
               onClick={handleAsk}
@@ -177,7 +177,7 @@ export default function RepoChat() {
           {(answer || asking) && (
             <div
               ref={answerRef}
-              className="prose prose-invert max-h-72 max-w-none overflow-y-auto rounded-lg bg-panel/60 p-3 text-sm text-slate-200"
+              className="md max-h-72 max-w-none overflow-y-auto rounded-lg bg-white p-3 text-sm text-neutral-800"
             >
               <ReactMarkdown>{answer || "Thinking…"}</ReactMarkdown>
             </div>
@@ -185,18 +185,18 @@ export default function RepoChat() {
         </div>
       )}
 
-      {error && <p className="text-xs text-rose-300">{error}</p>}
+      {error && <p className="text-xs text-rose-600">{error}</p>}
     </div>
   );
 }
 
 function StatusPill({ status }: { status: Repo["status"] }) {
   const map: Record<Repo["status"], string> = {
-    pending: "bg-slate-500/20 text-slate-300",
-    cloning: "bg-amber-500/20 text-amber-200",
-    indexing: "bg-amber-500/20 text-amber-200",
-    ready: "bg-emerald-500/20 text-emerald-200",
-    error: "bg-rose-500/20 text-rose-200",
+    pending: "bg-slate-500/20 text-neutral-600",
+    cloning: "bg-amber-500/20 text-amber-700",
+    indexing: "bg-amber-500/20 text-amber-700",
+    ready: "bg-emerald-500/20 text-emerald-700",
+    error: "bg-rose-500/20 text-rose-700",
   };
   return (
     <span className={`rounded-full px-2 py-0.5 text-[10px] ${map[status]}`}>

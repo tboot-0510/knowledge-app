@@ -20,10 +20,10 @@ function tierOf(difficulty: number): Difficulty {
 }
 
 const TIER_COLOR: Record<Difficulty, string> = {
-  easy: "bg-emerald-500/15 text-emerald-300",
-  medium: "bg-sky-500/15 text-sky-300",
-  hard: "bg-amber-500/15 text-amber-300",
-  advanced: "bg-rose-500/15 text-rose-300",
+  easy: "bg-emerald-500/15 text-emerald-700",
+  medium: "bg-sky-500/15 text-sky-700",
+  hard: "bg-amber-500/15 text-amber-700",
+  advanced: "bg-rose-500/15 text-rose-600",
 };
 
 export default function McqCard({ question, index, result, onAnswer }: Props) {
@@ -59,24 +59,24 @@ export default function McqCard({ question, index, result, onAnswer }: Props) {
 
   function choiceClass(i: number): string {
     if (!answered) {
-      return "border-white/10 bg-white/5 hover:border-accent/60 hover:bg-accent/10";
+      return "border-black/[0.08] bg-black/[0.04] hover:border-accent/60 hover:bg-accent/10";
     }
     if (i === result!.correct_index) {
-      return "border-emerald-500/60 bg-emerald-500/15 text-emerald-200";
+      return "border-emerald-500/60 bg-emerald-500/15 text-emerald-700";
     }
     if (i === result!.chosen_index) {
-      return "border-rose-500/60 bg-rose-500/15 text-rose-200";
+      return "border-rose-500/60 bg-rose-500/15 text-rose-700";
     }
-    return "border-white/5 bg-white/5 opacity-60";
+    return "border-black/[0.05] bg-black/[0.04] opacity-60";
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-panel/60 p-4">
+    <div className="rounded-xl border border-black/[0.08] bg-white p-4">
       <div className="mb-3 flex items-start gap-2">
-        <span className="mt-0.5 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300">
+        <span className="mt-0.5 rounded bg-black/[0.06] px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
           Q{index + 1}
         </span>
-        <p className="flex-1 text-sm leading-relaxed text-slate-100">{question.prompt}</p>
+        <p className="flex-1 text-sm leading-relaxed text-neutral-900">{question.prompt}</p>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] capitalize ${TIER_COLOR[tier]}`}>
           {tier}
         </span>
@@ -91,14 +91,14 @@ export default function McqCard({ question, index, result, onAnswer }: Props) {
               i,
             )}`}
           >
-            <span className="font-semibold text-slate-400">{LETTERS[i]}</span>
+            <span className="font-semibold text-neutral-500">{LETTERS[i]}</span>
             <span>{choice}</span>
           </button>
         ))}
       </div>
       {answered && (
-        <div className="mt-3 rounded-lg bg-white/5 p-3 text-xs leading-relaxed text-slate-300">
-          <span className="font-semibold text-slate-200">
+        <div className="mt-3 rounded-lg bg-black/[0.04] p-3 text-xs leading-relaxed text-neutral-600">
+          <span className="font-semibold text-neutral-800">
             {result!.is_correct ? "Correct. " : "Not quite. "}
           </span>
           {result!.explanation}
@@ -129,7 +129,7 @@ export default function McqCard({ question, index, result, onAnswer }: Props) {
                 onKeyDown={(e) =>
                   e.key === "Enter" && custom.trim() && run("custom", custom.trim())
                 }
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs outline-none focus:border-accent/60"
+                className="flex-1 rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-1.5 text-xs outline-none focus:border-accent/60"
               />
               <button
                 disabled={busy || !custom.trim()}
@@ -142,7 +142,7 @@ export default function McqCard({ question, index, result, onAnswer }: Props) {
           )}
 
           {(followup || busy) && (
-            <div className="prose prose-invert max-w-none rounded-lg bg-ink/60 p-3 text-xs text-slate-200">
+            <div className="md max-w-none rounded-lg bg-stone-100 p-3 text-xs text-neutral-800">
               <ReactMarkdown>{followup || "Thinking…"}</ReactMarkdown>
             </div>
           )}
@@ -165,7 +165,7 @@ function FollowBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 transition hover:border-accent/50 hover:text-accent disabled:opacity-50"
+      className="rounded-lg border border-black/[0.08] bg-black/[0.04] px-2.5 py-1 text-[11px] text-neutral-600 transition hover:border-accent/50 hover:text-accent disabled:opacity-50"
     >
       {children}
     </button>

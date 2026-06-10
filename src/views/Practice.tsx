@@ -54,7 +54,7 @@ export default function Practice() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-neutral-500">
         Open-ended interview practice: write a full answer and get it graded by
         your local model against a rubric.
       </p>
@@ -63,7 +63,7 @@ export default function Practice() {
         <select
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent/60"
+          className="flex-1 rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-sm outline-none focus:border-accent/60"
         >
           <option value="">Any selected topic</option>
           {topics.map((t) => (
@@ -83,14 +83,14 @@ export default function Practice() {
 
       {question && (
         <div className="flex flex-col gap-3">
-          <div className="rounded-xl border border-white/10 bg-panel/60 p-4">
-            <p className="text-sm leading-relaxed text-slate-100">{question.prompt}</p>
+          <div className="rounded-xl border border-black/[0.08] bg-white p-4">
+            <p className="text-sm leading-relaxed text-neutral-900">{question.prompt}</p>
             {question.rubric.length > 0 && (
-              <div className="mt-3 border-t border-white/10 pt-2">
-                <p className="text-[11px] uppercase tracking-wider text-slate-500">
+              <div className="mt-3 border-t border-black/[0.08] pt-2">
+                <p className="text-[11px] uppercase tracking-wider text-neutral-400">
                   Graded on
                 </p>
-                <ul className="mt-1 list-inside list-disc text-xs text-slate-400">
+                <ul className="mt-1 list-inside list-disc text-xs text-neutral-500">
                   {question.rubric.map((r, i) => (
                     <li key={i}>{r}</li>
                   ))}
@@ -104,7 +104,7 @@ export default function Practice() {
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="Write your answer…"
             rows={6}
-            className="w-full resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent/60"
+            className="w-full resize-y rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-sm outline-none focus:border-accent/60"
           />
           <button
             onClick={submit}
@@ -117,7 +117,7 @@ export default function Practice() {
       )}
 
       {grade && (
-        <div className="rounded-xl border border-white/10 bg-panel/60 p-4">
+        <div className="rounded-xl border border-black/[0.08] bg-white p-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-semibold">
               Score: {grade.score} / {grade.max_score}
@@ -125,26 +125,26 @@ export default function Practice() {
             <span
               className={`rounded-full px-2 py-0.5 text-xs ${
                 pct >= 70
-                  ? "bg-emerald-500/20 text-emerald-200"
+                  ? "bg-emerald-500/20 text-emerald-700"
                   : pct >= 40
-                    ? "bg-amber-500/20 text-amber-200"
-                    : "bg-rose-500/20 text-rose-200"
+                    ? "bg-amber-500/20 text-amber-700"
+                    : "bg-rose-500/20 text-rose-700"
               }`}
             >
               {pct}%
             </span>
           </div>
-          <p className="text-sm leading-relaxed text-slate-200">{grade.feedback}</p>
+          <p className="text-sm leading-relaxed text-neutral-800">{grade.feedback}</p>
           {grade.strengths.length > 0 && (
-            <Section title="Strengths" items={grade.strengths} color="text-emerald-300" />
+            <Section title="Strengths" items={grade.strengths} color="text-emerald-700" />
           )}
           {grade.gaps.length > 0 && (
-            <Section title="Gaps" items={grade.gaps} color="text-rose-300" />
+            <Section title="Gaps" items={grade.gaps} color="text-rose-600" />
           )}
         </div>
       )}
 
-      {error && <p className="text-xs text-rose-300">{error}</p>}
+      {error && <p className="text-xs text-rose-600">{error}</p>}
     </div>
   );
 }
@@ -163,7 +163,7 @@ function Section({
       <p className={`text-[11px] font-semibold uppercase tracking-wider ${color}`}>
         {title}
       </p>
-      <ul className="mt-0.5 list-inside list-disc text-xs text-slate-300">
+      <ul className="mt-0.5 list-inside list-disc text-xs text-neutral-600">
         {items.map((s, i) => (
           <li key={i}>{s}</li>
         ))}

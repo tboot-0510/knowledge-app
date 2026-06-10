@@ -10,10 +10,10 @@ import {
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "advanced"];
 
 const DIFF_COLOR: Record<Difficulty, string> = {
-  easy: "text-emerald-300",
-  medium: "text-sky-300",
-  hard: "text-amber-300",
-  advanced: "text-rose-300",
+  easy: "text-emerald-700",
+  medium: "text-sky-700",
+  hard: "text-amber-700",
+  advanced: "text-rose-600",
 };
 
 export default function Topics() {
@@ -73,11 +73,11 @@ export default function Topics() {
     await setTopicPref(t.slug, t.enabled, d).catch((e) => setError(String(e)));
   }
 
-  if (error) return <p className="text-sm text-rose-300">{error}</p>;
+  if (error) return <p className="text-sm text-rose-600">{error}</p>;
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-neutral-500">
         Choose the topics you want to study and the difficulty to be quizzed at.
         Your daily challenge draws only from selected topics.
       </p>
@@ -89,7 +89,7 @@ export default function Topics() {
           onChange={(e) => setCustomName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addTopic()}
           placeholder="Add a custom topic, e.g. 'Kafka internals'"
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-accent/60"
+          className="flex-1 rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-sm outline-none focus:border-accent/60"
         />
         <button
           onClick={addTopic}
@@ -103,22 +103,22 @@ export default function Topics() {
       {/* Learning paths */}
       {paths.length > 0 && (
         <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
             Learning paths
           </h3>
           <div className="flex flex-col gap-2">
             {paths.map((p) => {
               const pct = p.total > 0 ? Math.round((p.started / p.total) * 100) : 0;
               return (
-                <div key={p.slug} className="rounded-xl border border-white/10 bg-panel/60 p-3">
+                <div key={p.slug} className="rounded-xl border border-black/[0.08] bg-white p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{p.title}</span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-neutral-500">
                       {p.started}/{p.total} started
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-400">{p.description}</p>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <p className="mt-0.5 text-xs text-neutral-500">{p.description}</p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
                     <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -128,8 +128,8 @@ export default function Topics() {
                         title={`${s.correct}/${s.answered} correct`}
                         className={`rounded px-1.5 py-0.5 text-[10px] ${
                           s.answered > 0
-                            ? "bg-emerald-500/15 text-emerald-300"
-                            : "bg-white/5 text-slate-400"
+                            ? "bg-emerald-500/15 text-emerald-700"
+                            : "bg-black/[0.04] text-neutral-500"
                         }`}
                       >
                         {s.title}
@@ -145,7 +145,7 @@ export default function Topics() {
 
       {grouped.map(([area, items]) => (
         <div key={area}>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
             {area.replace(/-/g, " ")}
           </h3>
           <div className="flex flex-col gap-2">
@@ -157,8 +157,8 @@ export default function Topics() {
                   key={t.slug}
                   className={`rounded-xl border p-3 transition ${
                     t.enabled
-                      ? "border-white/10 bg-panel/60"
-                      : "border-white/5 bg-white/[0.02] opacity-60"
+                      ? "border-black/[0.08] bg-white"
+                      : "border-black/[0.05] bg-black/[0.02] opacity-60"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -166,18 +166,18 @@ export default function Topics() {
                       type="checkbox"
                       checked={t.enabled}
                       onChange={() => toggle(t)}
-                      className="mt-1 h-4 w-4 accent-[#6ea8fe]"
+                      className="mt-1 h-4 w-4 accent-[#4f46e5]"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{t.title}</span>
                         {t.answered > 0 && (
-                          <span className="shrink-0 text-[11px] text-slate-400">
+                          <span className="shrink-0 text-[11px] text-neutral-500">
                             {t.correct}/{t.answered} · {pct}%
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs text-slate-400">{t.summary}</p>
+                      <p className="mt-0.5 text-xs text-neutral-500">{t.summary}</p>
 
                       {/* difficulty selector */}
                       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -188,7 +188,7 @@ export default function Topics() {
                             className={`rounded-md border px-2 py-0.5 text-[11px] capitalize transition ${
                               t.target_difficulty === d
                                 ? "border-accent/60 bg-accent/15 text-accent"
-                                : "border-white/10 bg-white/5 text-slate-400 hover:text-slate-200"
+                                : "border-black/[0.08] bg-black/[0.04] text-neutral-500 hover:text-neutral-800"
                             }`}
                           >
                             {d}

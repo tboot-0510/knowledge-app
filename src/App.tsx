@@ -53,26 +53,25 @@ export default function App() {
   }, [route]);
 
   return (
-    <div className="flex h-full flex-col bg-ink/95 text-slate-100 backdrop-blur-xl">
-      <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">📚</span>
-          <h1 className="text-sm font-semibold tracking-wide">Knowledge</h1>
-        </div>
-        <nav className="flex flex-wrap gap-1">
+    <div className="flex h-full flex-col bg-paper/95 text-ink backdrop-blur-xl">
+      <header className="flex flex-col gap-2 border-b border-black/[0.06] px-5 pb-2 pt-4">
+        <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
+          Knowledge
+        </h1>
+        <nav className="-mx-1 flex gap-1 overflow-x-auto pb-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setRoute(t.id)}
-              className={`relative rounded-md px-2 py-1 text-xs transition ${
+              className={`relative whitespace-nowrap rounded-full px-3 py-1 text-xs transition ${
                 route === t.id
-                  ? "bg-accent/20 text-accent"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-accent/10 font-medium text-accent"
+                  : "text-neutral-400 hover:text-neutral-700"
               }`}
             >
               {t.label}
               {t.id === "review" && dueCount > 0 && (
-                <span className="ml-1 rounded-full bg-rose-500/80 px-1 text-[9px] font-semibold text-white">
+                <span className="ml-1 rounded-full bg-rose-500 px-1 text-[9px] font-semibold text-white">
                   {dueCount}
                 </span>
               )}
@@ -81,16 +80,28 @@ export default function App() {
         </nav>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto p-4">
-        {route === "daily" && <DailyChallenge />}
-        {route === "topics" && <Topics />}
-        {route === "practice" && <Practice />}
-        {route === "code" && <Code />}
-        {route === "review" && <Review />}
-        {route === "repos" && <RepoChat />}
-        {route === "progress" && <Progress />}
-        {route === "settings" && <Settings />}
-      </main>
+      <main className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{renderRoute()}</main>
     </div>
   );
+
+  function renderRoute() {
+    switch (route) {
+      case "daily":
+        return <DailyChallenge />;
+      case "topics":
+        return <Topics />;
+      case "practice":
+        return <Practice />;
+      case "code":
+        return <Code />;
+      case "review":
+        return <Review />;
+      case "repos":
+        return <RepoChat />;
+      case "progress":
+        return <Progress />;
+      case "settings":
+        return <Settings />;
+    }
+  }
 }

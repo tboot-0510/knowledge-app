@@ -29,8 +29,8 @@ export default function Progress() {
     }
   }
 
-  if (error) return <p className="text-sm text-rose-300">{error}</p>;
-  if (!stats) return <p className="text-sm text-slate-400">Loading…</p>;
+  if (error) return <p className="text-sm text-rose-600">{error}</p>;
+  if (!stats) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   const accuracy =
     stats.total_questions > 0
@@ -49,11 +49,11 @@ export default function Progress() {
       </div>
 
       <div>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
           Accuracy by area
         </h3>
         {stats.by_area.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-neutral-400">
             Answer some questions to see your strengths by area.
           </p>
         ) : (
@@ -62,13 +62,13 @@ export default function Progress() {
               const pct = a.total > 0 ? Math.round((a.correct / a.total) * 100) : 0;
               return (
                 <div key={a.area}>
-                  <div className="mb-1 flex justify-between text-xs text-slate-300">
+                  <div className="mb-1 flex justify-between text-xs text-neutral-600">
                     <span className="capitalize">{a.area.replace(/-/g, " ")}</span>
-                    <span className="text-slate-400">
+                    <span className="text-neutral-500">
                       {a.correct}/{a.total} · {pct}%
                     </span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-2 overflow-hidden rounded-full bg-black/[0.06]">
                     <div
                       className="h-full rounded-full bg-accent"
                       style={{ width: `${pct}%` }}
@@ -82,7 +82,7 @@ export default function Progress() {
       </div>
 
       {/* AI weakness report + study plan */}
-      <div className="border-t border-white/10 pt-3">
+      <div className="border-t border-black/[0.08] pt-3">
         <button
           onClick={runReport}
           disabled={reporting}
@@ -91,7 +91,7 @@ export default function Progress() {
           {reporting ? "Analyzing…" : "✨ Weakness report + study plan"}
         </button>
         {(report || reporting) && (
-          <div className="prose prose-invert mt-3 max-w-none rounded-lg bg-panel/60 p-3 text-sm text-slate-200">
+          <div className="md mt-3 max-w-none rounded-lg bg-white p-3 text-sm text-neutral-800">
             <ReactMarkdown>{report || "Analyzing your progress…"}</ReactMarkdown>
           </div>
         )}
@@ -102,9 +102,9 @@ export default function Progress() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-panel/60 p-3 text-center">
-      <p className="text-lg font-semibold text-slate-100">{value}</p>
-      <p className="mt-0.5 text-[11px] text-slate-400">{label}</p>
+    <div className="rounded-xl border border-black/[0.08] bg-white p-3 text-center">
+      <p className="text-lg font-semibold text-neutral-900">{value}</p>
+      <p className="mt-0.5 text-[11px] text-neutral-500">{label}</p>
     </div>
   );
 }
