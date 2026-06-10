@@ -14,4 +14,5 @@ pub mod review;
 pub mod settings;
 pub mod system;
 pub mod topics;
+pub mod web;
 pub mod window;

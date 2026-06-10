@@ -468,6 +468,24 @@ pub struct CodingProblem {
     pub optimal_space: String,
 }
 
+// ---- web tools (/search, /url) -----------------------------------------
+
+/// A web search result.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SearchResult {
+    pub title: String,
+    pub url: String,
+    pub snippet: String,
+}
+
+/// A fetched web page reduced to readable text.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FetchedPage {
+    pub url: String,
+    pub title: String,
+    pub text: String,
+}
+
 /// The local LLM's review of a submitted solution.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodeReview {

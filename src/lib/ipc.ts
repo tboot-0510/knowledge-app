@@ -9,6 +9,7 @@ import type {
   DailySession,
   Difficulty,
   DsCategoryCard,
+  FetchedPage,
   FollowupMode,
   FreeResponseGrade,
   FreeResponseQuestion,
@@ -20,6 +21,7 @@ import type {
   RecommendedModel,
   Repo,
   ReviewItem,
+  SearchResult,
   Settings,
   Streak,
   StreamChunk,
@@ -126,6 +128,23 @@ export const reviewSolution = (
   code: string,
   language: string,
 ) => invoke<CodeReview>("review_solution", { problem, code, language });
+
+// ---- web tools (/url, /search) -----------------------------------------
+
+export const fetchUrl = (url: string) => invoke<FetchedPage>("fetch_url", { url });
+export const webSearch = (query: string) =>
+  invoke<SearchResult[]>("web_search", { query });
+
+export async function askWeb(
+  question: string,
+  context: string,
+  sources: string[],
+  onChunk: (chunk: StreamChunk) => void,
+): Promise<void> {
+  const channel = new Channel<StreamChunk>();
+  channel.onmessage = onChunk;
+  await invoke<void>("ask_web", { question, context, sources, onEvent: channel });
+}
 
 // ---- system: hotkey + reminders ----------------------------------------
 

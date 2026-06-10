@@ -5,6 +5,7 @@ import Practice from "./views/Practice";
 import Code from "./views/Code";
 import Review from "./views/Review";
 import RepoChat from "./views/RepoChat";
+import Ask from "./views/Ask";
 import Progress from "./views/Progress";
 import Settings from "./views/Settings";
 import Onboarding from "./views/Onboarding";
@@ -21,6 +22,7 @@ type Route =
   | "practice"
   | "code"
   | "review"
+  | "ask"
   | "repos"
   | "progress"
   | "settings";
@@ -31,6 +33,7 @@ const TABS: { id: Route; label: string }[] = [
   { id: "practice", label: "Practice" },
   { id: "code", label: "Code" },
   { id: "review", label: "Review" },
+  { id: "ask", label: "Ask" },
   { id: "repos", label: "Repos" },
   { id: "progress", label: "Stats" },
   { id: "settings", label: "Settings" },
@@ -113,6 +116,8 @@ export default function App() {
         return <Code />;
       case "review":
         return <Review />;
+      case "ask":
+        return <Ask />;
       case "repos":
         return <RepoChat />;
       case "progress":

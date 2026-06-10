@@ -34,10 +34,16 @@ that does two things for senior / staff / principal engineers:
 9. **Repo Q&A** — link a **GitHub repository by URL**; it’s cloned and indexed
    **locally**, and you can ask questions about the codebase with answers that
    cite `file:line` ranges.
+10. **Web tools (`/search`, `/url`)** — in the **Ask** tab, `/search <query>`
+    runs a web search and reads the top results, `/url <address>` fetches a page,
+    and your local model answers with cited sources. Plain text asks the model
+    directly. Only the URL/search you request leaves the machine.
 
-Plus: a built‑in **model manager** (pull/recommend Ollama models, separate fast
-model for question generation), **daily reminder notifications**, and a
-**global hotkey** to summon the popup from anywhere.
+A first‑run **onboarding** flow lets you pick your level and topics of interest,
+and the UI uses a clean, light "vocabulary‑app" aesthetic. Plus: a built‑in
+**model manager** (pull/recommend Ollama models, separate fast model for
+question generation), **daily reminder notifications**, and a **global hotkey**
+to summon the popup from anywhere.
 
 **Everything runs locally.** All inference (chat + embeddings) goes through a
 local [Ollama](https://ollama.com) server — no cloud APIs, no data leaving your

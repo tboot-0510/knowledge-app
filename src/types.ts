@@ -166,6 +166,18 @@ export interface PullProgress {
   done: boolean;
 }
 
+export interface SearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface FetchedPage {
+  url: string;
+  title: string;
+  text: string;
+}
+
 export interface DsCategoryCard {
   slug: string;
   title: string;

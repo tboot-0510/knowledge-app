@@ -20,5 +20,6 @@ pub mod models;
 pub mod ollama;
 pub mod repo;
 pub mod scheduler;
+pub mod web;
 
 pub use error::{Error, Result};
