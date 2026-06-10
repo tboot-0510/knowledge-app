@@ -108,6 +108,7 @@ export interface Settings {
   ollama_url: string;
   reminders_enabled: boolean;
   global_shortcut: string;
+  onboarded: boolean;
 }
 
 export interface ReviewItem {

@@ -259,6 +259,8 @@ pub struct Settings {
     pub reminders_enabled: bool,
     /// Global shortcut that summons the popup (Tauri accelerator syntax).
     pub global_shortcut: String,
+    /// False until the user completes first-run onboarding.
+    pub onboarded: bool,
 }
 
 impl Default for Settings {
@@ -272,6 +274,7 @@ impl Default for Settings {
             ollama_url: "http://127.0.0.1:11434".to_string(),
             reminders_enabled: true,
             global_shortcut: "CmdOrCtrl+Shift+K".to_string(),
+            onboarded: false,
         }
     }
 }

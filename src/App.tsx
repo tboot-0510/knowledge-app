@@ -7,7 +7,13 @@ import Review from "./views/Review";
 import RepoChat from "./views/RepoChat";
 import Progress from "./views/Progress";
 import Settings from "./views/Settings";
-import { countDueReviews, onNavigate, sendReminderIfDue } from "./lib/ipc";
+import Onboarding from "./views/Onboarding";
+import {
+  countDueReviews,
+  getSettings,
+  onNavigate,
+  sendReminderIfDue,
+} from "./lib/ipc";
 
 type Route =
   | "daily"
@@ -33,8 +39,16 @@ const TABS: { id: Route; label: string }[] = [
 export default function App() {
   const [route, setRoute] = useState<Route>("daily");
   const [dueCount, setDueCount] = useState(0);
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
   useEffect(() => {
+    getSettings()
+      .then((s) => setOnboarded(s.onboarded))
+      .catch(() => setOnboarded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!onboarded) return;
     // Tray menu navigation.
     const unlisten = onNavigate((r) => {
       if (TABS.some((t) => t.id === r)) setRoute(r as Route);
@@ -45,12 +59,15 @@ export default function App() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, []);
+  }, [onboarded]);
 
   // Refresh the due-review badge whenever we leave the review tab.
   useEffect(() => {
     if (route !== "review") countDueReviews().then(setDueCount).catch(() => {});
   }, [route]);
+
+  if (onboarded === null) return <div className="h-full bg-paper/95" />;
+  if (!onboarded) return <Onboarding onDone={() => setOnboarded(true)} />;
 
   return (
     <div className="flex h-full flex-col bg-paper/95 text-ink backdrop-blur-xl">

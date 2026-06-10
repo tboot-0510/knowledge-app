@@ -110,6 +110,10 @@ impl Db {
             global_shortcut: self
                 .get_setting("global_shortcut")?
                 .unwrap_or(d.global_shortcut),
+            onboarded: self
+                .get_setting("onboarded")?
+                .map(|s| s == "true")
+                .unwrap_or(d.onboarded),
         })
     }
 
@@ -122,6 +126,7 @@ impl Db {
         self.set_setting("ollama_url", &s.ollama_url)?;
         self.set_setting("reminders_enabled", if s.reminders_enabled { "true" } else { "false" })?;
         self.set_setting("global_shortcut", &s.global_shortcut)?;
+        self.set_setting("onboarded", if s.onboarded { "true" } else { "false" })?;
         Ok(())
     }
 
