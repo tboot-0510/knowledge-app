@@ -8,13 +8,12 @@ import {
 import McqCard from "../components/McqCard";
 
 const DURATIONS = [5, 10, 15, 25];
-const TIERS: Difficulty[] = ["easy", "medium", "hard", "advanced"];
 
-function harder(d: Difficulty): Difficulty {
-  return TIERS[Math.min(TIERS.indexOf(d) + 1, TIERS.length - 1)];
-}
-function easier(d: Difficulty): Difficulty {
-  return TIERS[Math.max(TIERS.indexOf(d) - 1, 0)];
+function tierOf(difficulty: number): Difficulty {
+  if (difficulty <= 1) return "easy";
+  if (difficulty === 2) return "medium";
+  if (difficulty <= 4) return "hard";
+  return "advanced";
 }
 function mmss(total: number): string {
   const m = Math.floor(total / 60);
@@ -31,7 +30,6 @@ export default function Focus() {
   const [minutes, setMinutes] = useState(10);
 
   const [secondsLeft, setSecondsLeft] = useState(0);
-  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [question, setQuestion] = useState<Question | null>(null);
   const [result, setResult] = useState<AttemptResult | undefined>(undefined);
   const [answered, setAnswered] = useState(0);
@@ -60,13 +58,14 @@ export default function Focus() {
     return () => clearInterval(id);
   }, [phase]);
 
-  async function loadNext(diff: Difficulty) {
+  async function loadNext() {
     setLoading(true);
     setError(null);
     setResult(undefined);
     setQuestion(null);
     try {
-      setQuestion(await generateFocusQuestion(slug || undefined, diff));
+      // The backend's Elo recommender picks the difficulty + depth.
+      setQuestion(await generateFocusQuestion(slug || undefined));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -77,11 +76,10 @@ export default function Focus() {
   async function start() {
     setAnswered(0);
     setCorrect(0);
-    setDifficulty("medium");
     endRef.current = Date.now() + minutes * 60 * 1000;
     setSecondsLeft(minutes * 60);
     setPhase("running");
-    await loadNext("medium");
+    await loadNext();
   }
 
   async function answer(idx: number) {
@@ -91,8 +89,6 @@ export default function Focus() {
       setResult(res);
       setAnswered((a) => a + 1);
       if (res.is_correct) setCorrect((c) => c + 1);
-      // Harden on success, ease on a miss — the adaptive loop.
-      setDifficulty((d) => (res.is_correct ? harder(d) : easier(d)));
     } catch (e) {
       setError(String(e));
     }
@@ -100,7 +96,7 @@ export default function Focus() {
 
   function next() {
     if (phase !== "running") return;
-    loadNext(difficulty);
+    loadNext();
   }
 
   // ---- setup ----
@@ -207,9 +203,11 @@ export default function Focus() {
           <span>
             {correct}/{answered} correct
           </span>
-          <span className="rounded-full bg-accent/10 px-2 py-0.5 capitalize text-accent">
-            {difficulty}
-          </span>
+          {question && (
+            <span className="rounded-full bg-accent/10 px-2 py-0.5 capitalize text-accent">
+              {tierOf(question.difficulty)}
+            </span>
+          )}
           <button
             onClick={() => setPhase("done")}
             className="rounded-full border border-black/[0.08] px-2 py-0.5 text-neutral-600 hover:border-black/20"
@@ -224,7 +222,7 @@ export default function Focus() {
       {loading && !question && (
         <div className="flex flex-col items-center gap-2 py-8 text-neutral-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent/40 border-t-accent" />
-          <p className="text-xs">Generating a {difficulty} question…</p>
+          <p className="text-xs">Picking your next question…</p>
         </div>
       )}
 

@@ -470,6 +470,17 @@ pub struct CodingProblem {
 
 // ---- web tools (/search, /url) -----------------------------------------
 
+/// An Elo rating row: per-topic learner skill + item difficulty (slug
+/// `_global` holds the overall skill).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicRating {
+    pub slug: String,
+    pub skill: f64,
+    pub difficulty: f64,
+    pub attempts: u32,
+    pub streak: u32,
+}
+
 /// A web search result.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SearchResult {

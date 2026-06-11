@@ -146,6 +146,7 @@ pub fn run() {
             commands::topics::add_custom_topic,
             commands::topics::delete_custom_topic,
             commands::topics::list_paths,
+            commands::topics::list_topic_ratings,
             commands::review::get_due_reviews,
             commands::review::count_due_reviews,
             commands::review::submit_review,

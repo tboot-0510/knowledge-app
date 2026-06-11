@@ -27,6 +27,7 @@ import type {
   Streak,
   StreamChunk,
   TopicCard,
+  TopicRating,
 } from "../types";
 
 // ---- settings ----------------------------------------------------------
@@ -68,6 +69,8 @@ export const addCustomTopic = (name: string) =>
 export const deleteCustomTopic = (slug: string) =>
   invoke<void>("delete_custom_topic", { slug });
 export const listPaths = () => invoke<PathCard[]>("list_paths");
+export const listTopicRatings = () =>
+  invoke<TopicRating[]>("list_topic_ratings");
 
 // ---- spaced repetition -------------------------------------------------
 
@@ -117,14 +120,8 @@ export async function pullModel(
 
 // ---- focus (Pomodoro) --------------------------------------------------
 
-export const generateFocusQuestion = (
-  topicSlug: string | undefined,
-  difficulty: Difficulty,
-) =>
-  invoke<Question>("generate_focus_question", {
-    topicSlug: topicSlug ?? null,
-    difficulty,
-  });
+export const generateFocusQuestion = (topicSlug?: string) =>
+  invoke<Question>("generate_focus_question", { topicSlug: topicSlug ?? null });
 export const submitFocusAnswer = (questionId: number, chosenIndex: number) =>
   invoke<AttemptResult>("submit_focus_answer", { questionId, chosenIndex });
 

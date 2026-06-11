@@ -1,38 +1,41 @@
 //! Focus (Pomodoro) mode: a timed study session that serves questions on demand
-//! and adapts difficulty as the learner succeeds. Questions are persisted (so
-//! follow-ups, progress, and spaced-repetition all apply) under a single
+//! and adapts difficulty via the Elo recommender. Questions are persisted (so
+//! follow-ups, progress, and spaced repetition all apply) under a single
 //! sentinel "focus" session.
 
-use crate::commands::daily::{generate_mcqs, schedule_review};
+use crate::commands::daily::{generate_mcqs, schedule_review, topic_skill_streak, update_topic_rating};
 use crate::state::AppState;
-use knowledge_core::learning::{load_catalog, pick_topic, to_questions};
+use knowledge_core::db::Db;
+use knowledge_core::learning::{bloom_for, load_catalog, pick_topic, target_difficulty, to_questions};
 use knowledge_core::models::{AttemptResult, Difficulty, Question};
 use tauri::State;
 
 const FOCUS_DATE: &str = "focus";
 
-/// Generate (and persist) one question for a focus session, at `difficulty`.
-/// If `topic_slug` is omitted, a selected topic is chosen automatically.
+/// Generate (and persist) one question for a focus session. Difficulty and Bloom
+/// depth are chosen by the Elo recommender: for a fixed topic from that topic's
+/// skill rating, for "mixed" from the learner's global rating. If `topic_slug`
+/// is omitted, a topic is chosen automatically.
 #[tauri::command]
 pub async fn generate_focus_question(
     state: State<'_, AppState>,
     topic_slug: Option<String>,
-    difficulty: Difficulty,
 ) -> Result<Question, String> {
-    let (settings, topic) = {
+    let (settings, topic, difficulty, bloom) = {
         let db = state.db.lock().unwrap();
         let settings = db.get_settings().map_err(|e| e.to_string())?;
         let mut catalog = load_catalog().map_err(|e| e.to_string())?;
         catalog.extend(db.list_custom_topics().map_err(|e| e.to_string())?);
         let prefs = db.topic_prefs().map_err(|e| e.to_string())?;
 
-        let topic = match topic_slug {
-            Some(slug) if !slug.is_empty() => catalog
+        let fixed = topic_slug.as_deref().filter(|s| !s.is_empty());
+        let topic = match fixed {
+            Some(slug) => catalog
                 .iter()
                 .find(|t| t.slug == slug)
                 .cloned()
                 .ok_or_else(|| format!("unknown topic: {slug}"))?,
-            _ => {
+            None => {
                 let recent = db.recent_topic_slugs(3).map_err(|e| e.to_string())?;
                 let enabled: Vec<_> = catalog
                     .iter()
@@ -45,10 +48,26 @@ pub async fn generate_focus_question(
                     .ok_or_else(|| "no topics available".to_string())?
             }
         };
-        (settings, topic)
+
+        // Fixed topic → that topic's rating; mixed → the global rating so the
+        // session's momentum (streak) drives the hardening across topics.
+        let rating_slug = if fixed.is_some() {
+            topic.slug.clone()
+        } else {
+            Db::GLOBAL_RATING.to_string()
+        };
+        let cold_start = prefs
+            .get(&topic.slug)
+            .map(|p| p.target_difficulty)
+            .unwrap_or(Difficulty::Medium);
+        let level = settings.level;
+        let (skill, streak) = topic_skill_streak(&db, &rating_slug, level, cold_start);
+        let difficulty = target_difficulty(skill, streak);
+        let bloom = bloom_for(level, streak);
+        (settings, topic, difficulty, bloom)
     };
 
-    let (mcqs, source) = generate_mcqs(&settings, &topic, difficulty, 1).await;
+    let (mcqs, source) = generate_mcqs(&settings, &topic, difficulty, 1, bloom).await;
 
     let question = {
         let db = state.db.lock().unwrap();
@@ -80,7 +99,7 @@ pub async fn generate_focus_question(
     Ok(question)
 }
 
-/// Grade a focus answer: record it (counts toward progress) and schedule it for
+/// Grade a focus answer: record it, update Elo ratings, and schedule it for
 /// spaced repetition. Does not affect the daily streak.
 #[tauri::command]
 pub fn submit_focus_answer(
@@ -98,6 +117,7 @@ pub fn submit_focus_answer(
     db.record_attempt(session_id, question_id, chosen_index, is_correct)
         .map_err(|e| e.to_string())?;
     schedule_review(&db, question_id, is_correct)?;
+    update_topic_rating(&db, q.topic_id, is_correct)?;
     Ok(AttemptResult {
         question_id,
         chosen_index,

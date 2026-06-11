@@ -5,16 +5,56 @@ use crate::state::AppState;
 use chrono::{Duration, NaiveDate};
 use knowledge_core::db::Db;
 use knowledge_core::learning::{
-    build_mcq_prompt, generic_fallback, load_catalog, next_difficulty, parse_and_validate_mcqs,
-    pick_topic, quality_from_correct, seed_questions, sm2, to_questions, update_streak,
-    CatalogTopic, GeneratedMcq,
+    bloom_for, build_mcq_prompt, generic_fallback, level_prior, load_catalog,
+    parse_and_validate_mcqs, pick_topic, quality_from_correct, seed_questions, sm2,
+    target_difficulty, tier_to_rating, to_questions, update_ratings, update_streak, BloomLevel,
+    CatalogTopic, GeneratedMcq, K_FACTOR,
 };
 use knowledge_core::models::{
-    AttemptResult, DailySession, Difficulty, ProgressStats, Settings, Streak,
+    AttemptResult, DailySession, Difficulty, Level, ProgressStats, Settings, Streak, TopicRating,
 };
 use knowledge_core::ollama::OllamaClient;
 use knowledge_core::scheduler;
 use tauri::State;
+
+/// Current Elo skill + win-streak for a topic, cold-starting from the seniority
+/// prior and the user's chosen starting difficulty tier.
+pub(crate) fn topic_skill_streak(
+    db: &Db,
+    slug: &str,
+    level: Level,
+    cold_start_tier: Difficulty,
+) -> (f64, u32) {
+    match db.get_rating(slug).ok().flatten() {
+        Some(r) => (r.skill, r.streak),
+        None => (level_prior(level).max(tier_to_rating(cold_start_tier) - 100.0), 0),
+    }
+}
+
+/// Update the Elo ratings (the topic's and the global rating) after an answer.
+pub(crate) fn update_topic_rating(db: &Db, topic_id: i64, is_correct: bool) -> Result<(), String> {
+    let level = db.get_settings().map(|s| s.level).unwrap_or(Level::Senior);
+    let slug = db.get_topic(topic_id).map_err(|e| e.to_string())?.slug;
+    for key in [slug.as_str(), Db::GLOBAL_RATING] {
+        let prev = db.get_rating(key).map_err(|e| e.to_string())?.unwrap_or(TopicRating {
+            slug: key.to_string(),
+            skill: level_prior(level),
+            difficulty: level_prior(level),
+            attempts: 0,
+            streak: 0,
+        });
+        let (skill, difficulty) = update_ratings(prev.skill, prev.difficulty, is_correct, K_FACTOR);
+        db.upsert_rating(&TopicRating {
+            slug: key.to_string(),
+            skill,
+            difficulty,
+            attempts: prev.attempts + 1,
+            streak: if is_correct { prev.streak + 1 } else { 0 },
+        })
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
 
 /// Add `days` to a "YYYY-MM-DD" date string.
 pub(crate) fn add_days(date: &str, days: u32) -> String {
@@ -49,7 +89,7 @@ pub async fn get_today_session(state: State<'_, AppState>) -> Result<DailySessio
     }
 
     // Gather generation inputs under a scoped lock (dropped before any await).
-    let (settings, topic, target_difficulty) = {
+    let (settings, topic, difficulty, bloom) = {
         let db = state.db.lock().unwrap();
         let settings = db.get_settings().map_err(|e| e.to_string())?;
         let recent = db.recent_topic_slugs(5).map_err(|e| e.to_string())?;
@@ -71,25 +111,20 @@ pub async fn get_today_session(state: State<'_, AppState>) -> Result<DailySessio
             .cloned()
             .ok_or_else(|| "topic catalog is empty".to_string())?;
 
-        // Difficulty: honour the user's per-topic target if set, else adapt to
-        // recent accuracy and seniority.
-        let difficulty = match prefs.get(&topic.slug) {
-            Some(p) => p.target_difficulty,
-            None => {
-                let stats = db.progress_stats().map_err(|e| e.to_string())?;
-                let accuracy = if stats.total_questions > 0 {
-                    stats.total_correct as f32 / stats.total_questions as f32
-                } else {
-                    0.5
-                };
-                Difficulty::from_numeric(next_difficulty(settings.level, accuracy))
-            }
-        };
-        (settings, topic, difficulty)
+        // Elo-driven difficulty + Bloom depth. The user's per-topic tier seeds
+        // the cold start; the rating then self-calibrates after each answer.
+        let cold_start = prefs
+            .get(&topic.slug)
+            .map(|p| p.target_difficulty)
+            .unwrap_or(Difficulty::Medium);
+        let (skill, streak) = topic_skill_streak(&db, &topic.slug, settings.level, cold_start);
+        let difficulty = target_difficulty(skill, streak);
+        let bloom = bloom_for(settings.level, streak);
+        (settings, topic, difficulty, bloom)
     };
 
     // Generate via local LLM, falling back to the bundled seed bank.
-    let (mcqs, source) = generate_mcqs(&settings, &topic, target_difficulty, 4).await;
+    let (mcqs, source) = generate_mcqs(&settings, &topic, difficulty, 4, bloom).await;
 
     // Persist topic, session, and questions, then return the hydrated session.
     let session = {
@@ -126,10 +161,11 @@ pub(crate) async fn generate_mcqs(
     topic: &CatalogTopic,
     difficulty: Difficulty,
     n: usize,
+    bloom: BloomLevel,
 ) -> (Vec<GeneratedMcq>, &'static str) {
     let n = n.max(1);
     let client = OllamaClient::new(&settings.ollama_url);
-    let prompt = build_mcq_prompt(topic, settings.level, n, difficulty);
+    let prompt = build_mcq_prompt(topic, settings.level, n, difficulty, bloom);
     if let Ok(raw) = client.generate(&settings.mcq_model, &prompt, true).await {
         if let Ok(mut mcqs) = parse_and_validate_mcqs(&raw) {
             mcqs.truncate(n);
@@ -161,8 +197,9 @@ pub fn submit_answer(
     db.record_attempt(session_id, question_id, chosen_index, is_correct)
         .map_err(|e| e.to_string())?;
 
-    // Schedule this question for spaced-repetition review.
+    // Schedule for spaced repetition and update the Elo ratings.
     schedule_review(&db, question_id, is_correct)?;
+    update_topic_rating(&db, q.topic_id, is_correct)?;
 
     let (answered, total) = db
         .session_answer_counts(session_id)

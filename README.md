@@ -200,21 +200,25 @@ engine for this in an online, single‑user, local app:
 Retention is handled separately by **spaced repetition (SM‑2)** — already
 implemented — so mastered items resurface right before they'd be forgotten.
 
-### How it maps onto this app
+### How it maps onto this app (implemented)
 
-- **Today already exists:** questions carry a difficulty tier; `next_difficulty`
-  (in `crates/core/src/learning/scoring.rs`) nudges the tier from rolling
-  accuracy with a seniority floor; SM‑2 schedules reviews
+The Elo recommender is built in (`crates/core/src/learning/elo.rs`):
+
+- A per‑topic **skill** rating and item **difficulty** rating (plus a `_global`
+  skill row) are stored in `topic_ratings` and updated on **every** answer —
+  daily, Focus, and Review — with `r' = r + K·(outcome − expected)`
+  (`update_topic_rating` in `commands/daily.rs`).
+- The next question's difficulty is `target_difficulty(skill, streak)` — items
+  just below current skill (~70% success) that **climb as a win streak grows** —
+  mapped to the easy → advanced tier the generator consumes.
+- A **Bloom level** (`bloom_for(level, streak)`) is passed into the generation
+  prompt and climbs on streaks, so questions get *deeper* (apply → analyze →
+  evaluate), not just harder.
+- **Cold start:** ratings seed from the seniority prior (`level_prior`) and the
+  user's chosen per‑topic starting tier, then self‑calibrate.
+- **Focus mode** (the Pomodoro tab) shows the loop end‑to‑end; the **Stats** tab
+  shows your live skill rating per topic. Retention still rides on SM‑2
   (`crates/core/src/learning/srs.rs`).
-- **Focus mode** (the Pomodoro tab) demonstrates the loop end‑to‑end: within a
-  timed session it raises the difficulty tier after each correct answer and
-  lowers it after a miss.
-- **Proposed next step (Elo):** store a per‑topic `skill` rating and per‑item
-  `difficulty` rating; update both on every attempt with the Elo formula
-  `r' = r + K·(outcome − expected)`; pick the next topic/difficulty whose `b`
-  matches the learner's current θ; and pass a **Bloom level** into the generator
-  prompt that climbs on streaks. This generalizes the current tier nudging into
-  a smooth, self‑calibrating recommender.
 
 ### Does the seniority level target the questions?
 

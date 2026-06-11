@@ -6,6 +6,7 @@
 
 use crate::error::{Error, Result};
 use crate::learning::catalog::CatalogTopic;
+use crate::learning::elo::{bloom_directive, BloomLevel};
 use crate::models::{Difficulty, Level, Question};
 use serde::Deserialize;
 
@@ -30,12 +31,14 @@ struct McqEnvelope {
 }
 
 /// Build the prompt that asks the local model for `n` interview-style MCQs about
-/// `topic`, calibrated to `level` and the target `difficulty` tier. JSON only.
+/// `topic`, calibrated to `level`, the target `difficulty` tier, and the desired
+/// `bloom` cognitive depth. JSON only.
 pub fn build_mcq_prompt(
     topic: &CatalogTopic,
     level: Level,
     n: usize,
     difficulty: Difficulty,
+    bloom: BloomLevel,
 ) -> String {
     let points = if topic.talking_points.is_empty() {
         String::new()
@@ -59,7 +62,7 @@ pub fn build_mcq_prompt(
 Topic: {title}
 Area: {area}
 Summary: {summary}{points}
-Write exactly {n} multiple-choice questions in the style asked in real big-tech technical interviews. Target {tier_guidance}. Each question must:
+Write exactly {n} multiple-choice questions in the style asked in real big-tech technical interviews. Target {tier_guidance}. At the cognitive level, {bloom_directive}. Each question must:
 - read like an interview question: practical, scenario-driven, and probing real engineering trade-offs (no trivia, no "all of the above")
 - have exactly 4 answer choices, with exactly ONE correct, and plausible distractors that reflect common misconceptions
 - include a concise explanation of why the correct answer is right and why the tempting wrong answers fail
@@ -85,6 +88,7 @@ Respond with ONLY valid JSON, no prose, no markdown fences, matching exactly:
         points = points,
         n = n,
         tier_guidance = tier_guidance,
+        bloom_directive = bloom_directive(bloom),
     )
 }
 
@@ -197,11 +201,12 @@ mod tests {
             min_level: Level::Staff,
             talking_points: vec!["Raft".into()],
         };
-        let p = build_mcq_prompt(&topic, Level::Staff, 3, Difficulty::Advanced);
+        let p = build_mcq_prompt(&topic, Level::Staff, 3, Difficulty::Advanced, BloomLevel::Analyze);
         assert!(p.contains("interview"));
         assert!(p.to_lowercase().contains("advanced"));
         assert!(p.contains("exactly 3"));
         assert!(p.contains("Raft"));
+        assert!(p.to_lowercase().contains("analyz"));
     }
 
     const GOOD: &str = r#"{"questions":[

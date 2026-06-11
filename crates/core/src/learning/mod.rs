@@ -1,6 +1,7 @@
 //! Daily learning domain: topic catalog, MCQ generation/validation, scoring.
 
 pub mod catalog;
+pub mod elo;
 pub mod fallback;
 pub mod followup;
 pub mod freeresponse;
@@ -13,6 +14,10 @@ pub mod srs;
 pub mod synthesize;
 
 pub use catalog::{load_catalog, pick_topic, CatalogTopic};
+pub use elo::{
+    bloom_directive, bloom_for, level_prior, target_difficulty, tier_to_rating, update_ratings,
+    BloomLevel, K_FACTOR,
+};
 pub use fallback::{generic_fallback, seed_questions};
 pub use followup::build_followup_prompt;
 pub use freeresponse::{

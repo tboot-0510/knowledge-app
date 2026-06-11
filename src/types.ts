@@ -166,6 +166,14 @@ export interface PullProgress {
   done: boolean;
 }
 
+export interface TopicRating {
+  slug: string;
+  skill: number;
+  difficulty: number;
+  attempts: number;
+  streak: number;
+}
+
 export interface SearchResult {
   title: string;
   url: string;

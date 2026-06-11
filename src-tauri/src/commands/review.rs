@@ -32,6 +32,7 @@ pub fn submit_review(
     let q = db.get_question(question_id).map_err(|e| e.to_string())?;
     let is_correct = chosen_index == q.correct_index;
     schedule_review(&db, question_id, is_correct)?;
+    crate::commands::daily::update_topic_rating(&db, q.topic_id, is_correct)?;
     Ok(AttemptResult {
         question_id,
         chosen_index,

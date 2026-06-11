@@ -16,6 +16,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0003_topic_prefs.sql"),
     include_str!("../migrations/0004_practice.sql"),
     include_str!("../migrations/0005_coding.sql"),
+    include_str!("../migrations/0006_ratings.sql"),
 ];
 
 /// Thin wrapper around a rusqlite connection.
@@ -272,6 +273,62 @@ impl Db {
             out.insert(slug, (answered, correct, by_difficulty));
         }
         Ok(out)
+    }
+
+    // ---- elo ratings ----------------------------------------------------
+
+    /// Slug used for the learner's overall (cross-topic) skill rating.
+    pub const GLOBAL_RATING: &'static str = "_global";
+
+    pub fn get_rating(&self, slug: &str) -> Result<Option<TopicRating>> {
+        let row = self
+            .conn
+            .query_row(
+                "SELECT slug, skill, difficulty, attempts, streak FROM topic_ratings WHERE slug = ?1",
+                params![slug],
+                |r| {
+                    Ok(TopicRating {
+                        slug: r.get(0)?,
+                        skill: r.get(1)?,
+                        difficulty: r.get(2)?,
+                        attempts: r.get::<_, i64>(3)? as u32,
+                        streak: r.get::<_, i64>(4)? as u32,
+                    })
+                },
+            )
+            .optional()?;
+        Ok(row)
+    }
+
+    pub fn upsert_rating(&self, r: &TopicRating) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO topic_ratings(slug, skill, difficulty, attempts, streak, updated_at)
+             VALUES(?1,?2,?3,?4,?5,?6)
+             ON CONFLICT(slug) DO UPDATE SET
+                skill = excluded.skill, difficulty = excluded.difficulty,
+                attempts = excluded.attempts, streak = excluded.streak,
+                updated_at = excluded.updated_at",
+            params![r.slug, r.skill, r.difficulty, r.attempts as i64, r.streak as i64, Utc::now().to_rfc3339()],
+        )?;
+        Ok(())
+    }
+
+    /// All per-topic ratings (excludes the `_global` row), highest skill first.
+    pub fn list_ratings(&self) -> Result<Vec<TopicRating>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT slug, skill, difficulty, attempts, streak FROM topic_ratings
+             WHERE slug != ?1 ORDER BY skill DESC",
+        )?;
+        let rows = stmt.query_map(params![Self::GLOBAL_RATING], |r| {
+            Ok(TopicRating {
+                slug: r.get(0)?,
+                skill: r.get(1)?,
+                difficulty: r.get(2)?,
+                attempts: r.get::<_, i64>(3)? as u32,
+                streak: r.get::<_, i64>(4)? as u32,
+            })
+        })?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
     }
 
     // ---- daily sessions -------------------------------------------------
@@ -951,6 +1008,35 @@ mod tests {
         assert_eq!(list[0].min_level, Level::Staff);
         db.delete_custom_topic("webassembly").unwrap();
         assert!(db.list_custom_topics().unwrap().is_empty());
+    }
+
+    #[test]
+    fn ratings_round_trip_and_exclude_global() {
+        let db = Db::open_in_memory().unwrap();
+        assert!(db.get_rating("consensus").unwrap().is_none());
+        db.upsert_rating(&TopicRating {
+            slug: "consensus".into(),
+            skill: 1420.0,
+            difficulty: 1380.0,
+            attempts: 3,
+            streak: 2,
+        })
+        .unwrap();
+        db.upsert_rating(&TopicRating {
+            slug: Db::GLOBAL_RATING.into(),
+            skill: 1400.0,
+            difficulty: 1400.0,
+            attempts: 3,
+            streak: 2,
+        })
+        .unwrap();
+        let r = db.get_rating("consensus").unwrap().unwrap();
+        assert_eq!(r.streak, 2);
+        assert!((r.skill - 1420.0).abs() < 1e-9);
+        // list excludes the _global row
+        let list = db.list_ratings().unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].slug, "consensus");
     }
 
     #[test]

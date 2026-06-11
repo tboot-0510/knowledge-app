@@ -1,16 +1,30 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import type { ProgressStats } from "../types";
-import { generateWeaknessReport, getProgress } from "../lib/ipc";
+import type { ProgressStats, TopicRating } from "../types";
+import {
+  generateWeaknessReport,
+  getProgress,
+  listTopicRatings,
+} from "../lib/ipc";
+
+// Map an Elo rating (~1000–1900) to a 0–100 bar width.
+function skillPct(skill: number): number {
+  return Math.max(4, Math.min(100, Math.round((skill - 1000) / 9)));
+}
+function pretty(slug: string): string {
+  return slug.replace(/-/g, " ");
+}
 
 export default function Progress() {
   const [stats, setStats] = useState<ProgressStats | null>(null);
+  const [ratings, setRatings] = useState<TopicRating[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState("");
   const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     getProgress().then(setStats).catch((e) => setError(String(e)));
+    listTopicRatings().then(setRatings).catch(() => setRatings([]));
   }, []);
 
   async function runReport() {
@@ -80,6 +94,38 @@ export default function Progress() {
           </div>
         )}
       </div>
+
+      {/* Elo skill by topic */}
+      {ratings.length > 0 && (
+        <div className="border-t border-black/[0.08] pt-3">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            Skill by topic (adaptive)
+          </h3>
+          <div className="flex flex-col gap-2">
+            {ratings.slice(0, 12).map((r) => (
+              <div key={r.slug}>
+                <div className="mb-1 flex justify-between text-xs text-neutral-600">
+                  <span className="capitalize">{pretty(r.slug)}</span>
+                  <span className="text-neutral-400">
+                    {Math.round(r.skill)}
+                    {r.streak > 1 ? ` · 🔥${r.streak}` : ""}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-black/[0.06]">
+                  <div
+                    className="h-full rounded-full bg-accent"
+                    style={{ width: `${skillPct(r.skill)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-neutral-400">
+            Your skill rating rises as you answer correctly; questions are then
+            generated just above it (harder on a streak).
+          </p>
+        </div>
+      )}
 
       {/* AI weakness report + study plan */}
       <div className="border-t border-black/[0.08] pt-3">

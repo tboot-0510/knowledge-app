@@ -4,7 +4,7 @@ use crate::state::AppState;
 use knowledge_core::learning::{
     build_path_card, build_synthesis_prompt, load_catalog, load_paths, parse_synthesized_topic,
 };
-use knowledge_core::models::{Difficulty, PathCard, TopicCard, TopicPref};
+use knowledge_core::models::{Difficulty, PathCard, TopicCard, TopicPref, TopicRating};
 use knowledge_core::ollama::OllamaClient;
 use std::collections::HashMap;
 use tauri::State;
@@ -96,6 +96,12 @@ pub fn delete_custom_topic(state: State<AppState>, slug: String) -> Result<(), S
         .unwrap()
         .delete_custom_topic(&slug)
         .map_err(|e| e.to_string())
+}
+
+/// Per-topic Elo skill ratings (for the Stats "skill by topic" view).
+#[tauri::command]
+pub fn list_topic_ratings(state: State<AppState>) -> Result<Vec<TopicRating>, String> {
+    state.db.lock().unwrap().list_ratings().map_err(|e| e.to_string())
 }
 
 /// List curated learning paths with the user's progress through each.
