@@ -309,6 +309,20 @@ impl Db {
         }))
     }
 
+    /// Look up a session id by its date key (lightweight; doesn't hydrate
+    /// questions). Used for the persistent "focus" session.
+    pub fn session_id_by_date(&self, date: &str) -> Result<Option<i64>> {
+        let id = self
+            .conn
+            .query_row(
+                "SELECT id FROM daily_sessions WHERE date = ?1",
+                params![date],
+                |r| r.get(0),
+            )
+            .optional()?;
+        Ok(id)
+    }
+
     /// Create a session row for `date`/`topic_id` and return its id.
     pub fn create_session(&self, date: &str, topic_id: i64, level: Level) -> Result<i64> {
         self.conn.execute(

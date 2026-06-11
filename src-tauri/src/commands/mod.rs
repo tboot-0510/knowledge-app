@@ -6,6 +6,7 @@
 pub mod chat;
 pub mod coding;
 pub mod daily;
+pub mod focus;
 pub mod insight;
 pub mod models;
 pub mod practice;

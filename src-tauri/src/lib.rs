@@ -155,6 +155,8 @@ pub fn run() {
             commands::coding::list_ds_categories,
             commands::coding::generate_coding_problem,
             commands::coding::review_solution,
+            commands::focus::generate_focus_question,
+            commands::focus::submit_focus_answer,
             commands::web::fetch_url,
             commands::web::web_search,
             commands::web::ask_web,

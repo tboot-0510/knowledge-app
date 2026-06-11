@@ -89,7 +89,7 @@ pub async fn get_today_session(state: State<'_, AppState>) -> Result<DailySessio
     };
 
     // Generate via local LLM, falling back to the bundled seed bank.
-    let (mcqs, source) = generate_or_fallback(&settings, &topic, target_difficulty).await;
+    let (mcqs, source) = generate_mcqs(&settings, &topic, target_difficulty, 4).await;
 
     // Persist topic, session, and questions, then return the hydrated session.
     let session = {
@@ -119,21 +119,28 @@ pub async fn get_today_session(state: State<'_, AppState>) -> Result<DailySessio
     Ok(session)
 }
 
-/// Try the local model; on any failure use the seed bank, then a generic question.
-async fn generate_or_fallback(
+/// Generate up to `n` MCQs via the local model, falling back to the seed bank,
+/// then a generic question. Shared by the daily challenge and Focus mode.
+pub(crate) async fn generate_mcqs(
     settings: &Settings,
     topic: &CatalogTopic,
     difficulty: Difficulty,
+    n: usize,
 ) -> (Vec<GeneratedMcq>, &'static str) {
+    let n = n.max(1);
     let client = OllamaClient::new(&settings.ollama_url);
-    let prompt = build_mcq_prompt(topic, settings.level, 4, difficulty);
+    let prompt = build_mcq_prompt(topic, settings.level, n, difficulty);
     if let Ok(raw) = client.generate(&settings.mcq_model, &prompt, true).await {
-        if let Ok(mcqs) = parse_and_validate_mcqs(&raw) {
-            return (mcqs, "generated");
+        if let Ok(mut mcqs) = parse_and_validate_mcqs(&raw) {
+            mcqs.truncate(n);
+            if !mcqs.is_empty() {
+                return (mcqs, "generated");
+            }
         }
     }
-    let seed = seed_questions(&topic.slug);
+    let mut seed = seed_questions(&topic.slug);
     if !seed.is_empty() {
+        seed.truncate(n);
         return (seed, "catalog");
     }
     (vec![generic_fallback(&topic.title)], "catalog")

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DailyChallenge from "./views/DailyChallenge";
 import Topics from "./views/Topics";
 import Practice from "./views/Practice";
+import Focus from "./views/Focus";
 import Code from "./views/Code";
 import Review from "./views/Review";
 import RepoChat from "./views/RepoChat";
@@ -18,6 +19,7 @@ import {
 
 type Route =
   | "daily"
+  | "focus"
   | "topics"
   | "practice"
   | "code"
@@ -29,6 +31,7 @@ type Route =
 
 const TABS: { id: Route; label: string }[] = [
   { id: "daily", label: "Today" },
+  { id: "focus", label: "Focus" },
   { id: "topics", label: "Topics" },
   { id: "practice", label: "Practice" },
   { id: "code", label: "Code" },
@@ -108,6 +111,8 @@ export default function App() {
     switch (route) {
       case "daily":
         return <DailyChallenge />;
+      case "focus":
+        return <Focus />;
       case "topics":
         return <Topics />;
       case "practice":

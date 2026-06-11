@@ -18,6 +18,7 @@ import type {
   PathCard,
   ProgressStats,
   PullProgress,
+  Question,
   RecommendedModel,
   Repo,
   ReviewItem,
@@ -113,6 +114,19 @@ export async function pullModel(
   channel.onmessage = onProgress;
   await invoke<void>("pull_model", { name, onEvent: channel });
 }
+
+// ---- focus (Pomodoro) --------------------------------------------------
+
+export const generateFocusQuestion = (
+  topicSlug: string | undefined,
+  difficulty: Difficulty,
+) =>
+  invoke<Question>("generate_focus_question", {
+    topicSlug: topicSlug ?? null,
+    difficulty,
+  });
+export const submitFocusAnswer = (questionId: number, chosenIndex: number) =>
+  invoke<AttemptResult>("submit_focus_answer", { questionId, chosenIndex });
 
 // ---- coding (LeetCode-style) -------------------------------------------
 

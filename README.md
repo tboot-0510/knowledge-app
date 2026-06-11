@@ -12,7 +12,11 @@ that does two things for senior / staff / principal engineers:
    security, performance, leadership…), choose a target **difficulty tier**
    (easy / medium / hard / advanced) per topic, and track your grades per topic
    and per tier. The daily challenge draws only from your selected topics.
-3. **Follow‑ups** — after answering any question you can ask the local model to
+3. **Focus mode (Pomodoro)** — pick a duration (5/10/25 min) and a topic, and
+   get a continuous, timed stream of questions that **adapt** — harder after each
+   correct answer, easier after a miss — to keep you at the edge of your ability.
+   Every answer still counts toward progress and spaced repetition.
+4. **Follow‑ups** — after answering any question you can ask the local model to
    **explain in depth**, pose a harder **interview‑style follow‑up**, or answer
    **your own question** about the concept — all streamed locally.
 4. **Free‑response practice** — open‑ended interview questions you answer in
@@ -153,6 +157,75 @@ bun run build                    # vite production build
 4. **Repos** tab → paste a small public repo URL → watch it index → ask a question
    and confirm a streamed, file‑citing answer.
 5. **Settings** → switch seniority level / models → Save.
+
+---
+
+## Adaptive difficulty & question recommendation
+
+**Goal:** as a learner answers correctly, the app should *harden* the questions —
+both raising difficulty and asking deeper, more detailed questions — to keep
+them at the edge of their ability and steepen the learning curve. As they
+struggle, it should ease off. This is the classic "desirable difficulty" /
+flow‑channel idea: keep the challenge just above current skill.
+
+### Recommended approach (research‑backed)
+
+The literature points to the **Elo rating system (ERS)** as the most practical
+engine for this in an online, single‑user, local app:
+
+- Each **learner** has a skill rating θ and each **item/topic** a difficulty
+  rating b. After every answer, both are nudged: a correct answer raises θ and
+  lowers the item's b; a wrong answer does the opposite. The next item is chosen
+  so its difficulty matches the updated θ — i.e. it *automatically hardens after
+  success*. Elo is "simple, fast, robust and order‑sensitive," updates after
+  every question, and—unlike full **Item Response Theory (IRT)**—needs no
+  large‑sample pre‑calibration, which makes it ideal for a fresh local DB.
+  ([Pelánek, *Applications of the Elo rating system in adaptive educational
+  systems*](https://www.sciencedirect.com/science/article/abs/pii/S036013151630080X);
+  [overview of Elo for adaptive assessment](https://www.researchgate.net/publication/301635151_ON_THE_USE_OF_ELO_RATING_FOR_ADAPTIVE_ASSESSMENT);
+  [multivariate Elo learner model](https://arxiv.org/pdf/1910.12581))
+- IRT/CAT gives more principled ability estimates but requires calibrated item
+  banks; Elo is the pragmatic online approximation and the two can be combined
+  ([on‑the‑fly IRT estimation](https://link.springer.com/article/10.3758/s13428-022-01953-x)).
+
+"Harder" should move along **two axes**, not one:
+
+1. **Difficulty** — the Elo `b` rating, surfaced to the generator as the
+   easy → medium → hard → advanced tier.
+2. **Cognitive depth** — climb **Bloom's taxonomy** (remember → understand →
+   apply → analyze → evaluate → create). On a win streak we ask for *deeper*
+   questions ("design/critique/compare trade‑offs") rather than merely harder
+   recall, which is what produces richer insight.
+
+Retention is handled separately by **spaced repetition (SM‑2)** — already
+implemented — so mastered items resurface right before they'd be forgotten.
+
+### How it maps onto this app
+
+- **Today already exists:** questions carry a difficulty tier; `next_difficulty`
+  (in `crates/core/src/learning/scoring.rs`) nudges the tier from rolling
+  accuracy with a seniority floor; SM‑2 schedules reviews
+  (`crates/core/src/learning/srs.rs`).
+- **Focus mode** (the Pomodoro tab) demonstrates the loop end‑to‑end: within a
+  timed session it raises the difficulty tier after each correct answer and
+  lowers it after a miss.
+- **Proposed next step (Elo):** store a per‑topic `skill` rating and per‑item
+  `difficulty` rating; update both on every attempt with the Elo formula
+  `r' = r + K·(outcome − expected)`; pick the next topic/difficulty whose `b`
+  matches the learner's current θ; and pass a **Bloom level** into the generator
+  prompt that climbs on streaks. This generalizes the current tier nudging into
+  a smooth, self‑calibrating recommender.
+
+### Does the seniority level target the questions?
+
+**Yes.** The selected level (senior / staff / principal) feeds the model in two
+ways: it is written directly into the generation prompt ("writing
+{difficulty}‑tier interview questions for a {level} engineer", in
+`crates/core/src/learning/generator.rs` and `freeresponse.rs`), and it sets the
+**baseline difficulty floor** (`Level::baseline_difficulty` in `models.rs`) that
+`next_difficulty` adapts around. So level shifts both the *framing* and the
+*starting/adaptive difficulty*. In Elo terms it's the **cold‑start prior** for
+θ — a sensible starting ability before the app has enough answers to calibrate.
 
 ---
 
