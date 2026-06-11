@@ -5,28 +5,63 @@ mod platform;
 mod state;
 
 use state::AppState;
-use tauri::menu::{Menu, MenuItem};
-use tauri::tray::TrayIconBuilder;
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Emitter, Manager};
 use tauri_plugin_autostart::MacosLauncher;
 
-/// Build the system tray (menu-bar) icon and its menu.
-fn build_tray(app: &tauri::App) -> tauri::Result<()> {
-    let open_today = MenuItem::with_id(app, "open_today", "Today's Challenge", true, None::<&str>)?;
-    let open_repos = MenuItem::with_id(app, "open_repos", "Repo Q&A", true, None::<&str>)?;
-    let open_settings = MenuItem::with_id(app, "open_settings", "Settings", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open_today, &open_repos, &open_settings, &quit])?;
+/// Show or hide the main window (used by the menu-bar icon's left click).
+fn toggle_window(app: &tauri::AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        if w.is_visible().unwrap_or(false) {
+            let _ = w.hide();
+        } else {
+            let _ = w.show();
+            let _ = w.set_focus();
+        }
+    }
+}
 
-    let mut builder = TrayIconBuilder::new().menu(&menu).on_menu_event(|app, event| {
-        match event.id.as_ref() {
+/// Build the menu-bar (status-bar) icon: left-click toggles the window, and a
+/// right-click menu provides quick navigation + quit. Mirrors thuki's quick
+/// access from the menu bar.
+fn build_tray(app: &tauri::App) -> tauri::Result<()> {
+    let open = MenuItem::with_id(app, "open", "Open Knowledge", true, None::<&str>)?;
+    let open_today = MenuItem::with_id(app, "open_today", "Today's Challenge", true, None::<&str>)?;
+    let open_ask = MenuItem::with_id(app, "open_ask", "Ask the web", true, None::<&str>)?;
+    let open_settings = MenuItem::with_id(app, "open_settings", "Settings", true, None::<&str>)?;
+    let sep = PredefinedMenuItem::separator(app)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(
+        app,
+        &[&open, &open_today, &open_ask, &open_settings, &sep, &quit],
+    )?;
+
+    let mut builder = TrayIconBuilder::with_id("main-tray")
+        .tooltip("Knowledge")
+        .menu(&menu)
+        // Left click toggles the window; the menu opens on right click.
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "open" => {
+                let _ = platform::show_daily_panel(app);
+            }
             "open_today" => navigate(app, "daily"),
-            "open_repos" => navigate(app, "repos"),
+            "open_ask" => navigate(app, "ask"),
             "open_settings" => navigate(app, "settings"),
             "quit" => app.exit(0),
             _ => {}
-        }
-    });
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_window(tray.app_handle());
+            }
+        });
     if let Some(icon) = app.default_window_icon() {
         builder = builder.icon(icon.clone());
     }

@@ -12,49 +12,30 @@ use tauri::{App, AppHandle, Manager};
 
 const LAUNCH_AGENT_LABEL: &str = "com.knowledgeapp.app";
 
-/// One-time setup: hide the dock icon and convert the main window to a floating
-/// panel that can appear above other apps (mirrors thuki's overlay model).
+/// One-time setup: show the main window on launch.
+///
+/// NOTE: earlier builds hid the Dock icon (Accessory policy) and converted the
+/// window to a hidden NSPanel, which made the installed app appear "not to
+/// open." We now keep a normal, reliably-visible window plus a menu-bar icon
+/// (see `build_tray` in lib.rs) for quick access.
 pub fn setup(app: &mut App) -> tauri::Result<()> {
-    // Accessory = no Dock icon, behaves like a menu-bar/overlay utility.
-    let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-
     if let Some(window) = app.get_webview_window("main") {
-        convert_to_panel(&window);
+        let _ = window.show();
+        let _ = window.set_focus();
     }
     Ok(())
 }
 
-/// Convert the main window's NSWindow into a non-activating floating NSPanel.
-fn convert_to_panel(window: &tauri::WebviewWindow) {
-    use tauri_nspanel::WebviewWindowExt;
-    match window.to_panel() {
-        Ok(_panel) => {
-            // Optional tuning to make the panel float above other apps and be
-            // available on all spaces / over fullscreen apps. The exact setters
-            // depend on the tauri-nspanel revision; enable as needed:
-            //
-            //   _panel.set_level(NSFloatingWindowLevel);
-            //   _panel.set_collection_behaviour(
-            //       CanJoinAllSpaces | FullScreenAuxiliary);
-            //   _panel.set_style_mask(NSWindowStyleMaskNonactivatingPanel);
-        }
-        Err(e) => {
-            tracing::warn!("failed to convert window to NSPanel, using normal window: {e:?}");
-        }
-    }
-}
-
-/// Bring the daily-challenge panel to the foreground, centered.
+/// Bring the main window to the foreground, centered.
 pub fn show_daily_panel(app: &AppHandle) -> tauri::Result<()> {
     if let Some(w) = app.get_webview_window("main") {
-        let _ = w.center();
         let _ = w.show();
         let _ = w.set_focus();
     }
     Ok(())
 }
 
-/// Order the panel out (hide) without quitting the app.
+/// Hide the window without quitting the app.
 pub fn hide_panel(app: &AppHandle) -> tauri::Result<()> {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.hide();
