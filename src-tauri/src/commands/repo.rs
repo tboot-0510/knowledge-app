@@ -68,7 +68,7 @@ pub async fn link_repo(
         .map_err(|e| e.to_string())?;
 
     // Embed all chunks (await — no DB lock held here).
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let app_for_progress = app.clone();
     let embed_result = embed_repo(&client, &settings.embed_model, &path, move |done, total| {
         let _ = app_for_progress.emit(

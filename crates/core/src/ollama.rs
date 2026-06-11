@@ -1,19 +1,20 @@
-//! Local-LLM client for a running Ollama server (default `127.0.0.1:11434`).
-//!
-//! Only local inference — no cloud endpoints. Provides blocking-style async
-//! helpers for generation and embeddings, plus a streaming generator used by the
-//! repo Q&A view. Pure request/response shaping; networking is via `reqwest`.
+//! Client for the Ollama HTTP API — a local server (default `127.0.0.1:11434`)
+//! or Ollama Cloud (`https://ollama.com` with a bearer API key). Same API shape
+//! either way. Provides async helpers for generation and embeddings, plus a
+//! streaming generator used by the repo Q&A view.
 
 use crate::error::{Error, Result};
-use crate::models::ModelInfo;
+use crate::models::{ModelInfo, Settings};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-/// Thin async client around the Ollama HTTP API.
+/// Thin async client around the Ollama HTTP API (local or Ollama Cloud).
 #[derive(Clone)]
 pub struct OllamaClient {
     base_url: String,
+    /// Bearer token for Ollama Cloud (None for a local server).
+    api_key: Option<String>,
     http: reqwest::Client,
 }
 
@@ -59,16 +60,35 @@ pub struct PullProgress {
 
 impl OllamaClient {
     pub fn new(base_url: impl Into<String>) -> Self {
+        Self::with_auth(base_url, None)
+    }
+
+    /// Construct a client with an optional bearer token (Ollama Cloud).
+    pub fn with_auth(base_url: impl Into<String>, api_key: Option<String>) -> Self {
         OllamaClient {
             base_url: base_url.into().trim_end_matches('/').to_string(),
+            api_key: api_key.filter(|k| !k.trim().is_empty()),
             http: reqwest::Client::new(),
+        }
+    }
+
+    /// Build the right client for the current settings: Ollama Cloud (with the
+    /// API key) when enabled, otherwise the local server.
+    pub fn from_settings(s: &Settings) -> Self {
+        Self::with_auth(s.effective_url(), s.effective_api_key())
+    }
+
+    /// Attach the bearer token to a request when in cloud mode.
+    fn auth(&self, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        match &self.api_key {
+            Some(k) => rb.bearer_auth(k),
+            None => rb,
         }
     }
 
     /// Verify the server is reachable; maps connection errors to a friendly message.
     pub async fn health(&self) -> Result<()> {
-        self.http
-            .get(format!("{}/api/tags", self.base_url))
+        self.auth(self.http.get(format!("{}/api/tags", self.base_url)))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
@@ -78,9 +98,7 @@ impl OllamaClient {
 
     /// List locally available model names (`/api/tags`).
     pub async fn list_models(&self) -> Result<Vec<String>> {
-        let resp = self
-            .http
-            .get(format!("{}/api/tags", self.base_url))
+        let resp = self.auth(self.http.get(format!("{}/api/tags", self.base_url)))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
@@ -92,9 +110,7 @@ impl OllamaClient {
 
     /// List locally available models with their on-disk sizes.
     pub async fn list_models_detailed(&self) -> Result<Vec<ModelInfo>> {
-        let resp = self
-            .http
-            .get(format!("{}/api/tags", self.base_url))
+        let resp = self.auth(self.http.get(format!("{}/api/tags", self.base_url)))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?
@@ -116,10 +132,8 @@ impl OllamaClient {
     where
         F: FnMut(PullProgress),
     {
-        let resp = self
-            .http
-            .post(format!("{}/api/pull", self.base_url))
-            .json(&json!({ "model": name, "stream": true }))
+        let resp = self.auth(self.http.post(format!("{}/api/pull", self.base_url))
+            .json(&json!({ "model": name, "stream": true })))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
@@ -174,10 +188,8 @@ impl OllamaClient {
         if format_json {
             body["format"] = json!("json");
         }
-        let resp = self
-            .http
-            .post(format!("{}/api/generate", self.base_url))
-            .json(&body)
+        let resp = self.auth(self.http.post(format!("{}/api/generate", self.base_url))
+            .json(&body))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
@@ -190,10 +202,8 @@ impl OllamaClient {
 
     /// Delete a locally installed model.
     pub async fn delete_model(&self, name: &str) -> Result<()> {
-        let resp = self
-            .http
-            .delete(format!("{}/api/delete", self.base_url))
-            .json(&json!({ "model": name }))
+        let resp = self.auth(self.http.delete(format!("{}/api/delete", self.base_url))
+            .json(&json!({ "model": name })))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
@@ -203,10 +213,8 @@ impl OllamaClient {
 
     /// Embed a single text via `/api/embeddings`.
     pub async fn embed(&self, model: &str, text: &str) -> Result<Vec<f32>> {
-        let resp = self
-            .http
-            .post(format!("{}/api/embeddings", self.base_url))
-            .json(&json!({ "model": model, "prompt": text }))
+        let resp = self.auth(self.http.post(format!("{}/api/embeddings", self.base_url))
+            .json(&json!({ "model": model, "prompt": text })))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;
@@ -223,10 +231,8 @@ impl OllamaClient {
     where
         F: FnMut(StreamChunk),
     {
-        let resp = self
-            .http
-            .post(format!("{}/api/generate", self.base_url))
-            .json(&json!({ "model": model, "prompt": prompt, "stream": true }))
+        let resp = self.auth(self.http.post(format!("{}/api/generate", self.base_url))
+            .json(&json!({ "model": model, "prompt": prompt, "stream": true })))
             .send()
             .await
             .map_err(|_| Error::OllamaUnreachable(self.base_url.clone()))?;

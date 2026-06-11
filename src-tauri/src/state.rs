@@ -22,16 +22,15 @@ impl AppState {
         }
     }
 
-    /// Build an Ollama client from the currently-persisted base URL.
+    /// Build an Ollama client for the current settings (local or Ollama Cloud).
     pub fn ollama(&self) -> OllamaClient {
-        let url = self
+        let settings = self
             .db
             .lock()
             .unwrap()
             .get_settings()
-            .map(|s| s.ollama_url)
-            .unwrap_or_else(|_| "http://127.0.0.1:11434".to_string());
-        OllamaClient::new(url)
+            .unwrap_or_default();
+        OllamaClient::from_settings(&settings)
     }
 
     /// Directory under which linked repos are cloned.

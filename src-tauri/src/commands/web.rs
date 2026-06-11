@@ -35,7 +35,7 @@ pub async fn ask_web(
         db.get_settings().map_err(|e| e.to_string())?
     };
     let prompt = web::build_web_prompt(&question, &context, &sources);
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let result = client
         .generate_stream(&settings.chat_model, &prompt, |chunk| {
             let _ = on_event.send(chunk);

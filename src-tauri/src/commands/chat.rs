@@ -37,7 +37,7 @@ pub async fn ask_repo(
         return Ok(());
     }
 
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
 
     // Embed the question and rank chunks.
     let qvec = match client.embed(&settings.embed_model, &question).await {
@@ -99,7 +99,7 @@ pub async fn ask_followup(
     };
 
     let prompt = build_followup_prompt(&question, mode, user_query.as_deref());
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let result = client
         .generate_stream(&settings.chat_model, &prompt, |chunk| {
             let _ = on_event.send(chunk);

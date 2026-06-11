@@ -164,7 +164,7 @@ pub(crate) async fn generate_mcqs(
     bloom: BloomLevel,
 ) -> (Vec<GeneratedMcq>, &'static str) {
     let n = n.max(1);
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(settings);
     let prompt = build_mcq_prompt(topic, settings.level, n, difficulty, bloom);
     if let Ok(raw) = client.generate(&settings.mcq_model, &prompt, true).await {
         if let Ok(mut mcqs) = parse_and_validate_mcqs(&raw) {

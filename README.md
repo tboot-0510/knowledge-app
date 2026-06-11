@@ -110,6 +110,28 @@ streams a grounded answer that cites the source files.
 - **Rust** (stable) + **[Bun](https://bun.sh)** (or npm) for the frontend.
 - Xcode command line tools (`xcode-select --install`).
 
+### Local models vs Ollama Cloud
+
+By default everything runs **locally** — `ollama serve` runs models on your
+machine, so it's private, offline, and free, but bounded by your hardware (a
+laptop can't realistically run a 120B model).
+
+**Ollama Cloud** (Settings → Inference → *Ollama Cloud*) instead routes
+inference to Ollama's hosted GPUs ([docs](https://docs.ollama.com/cloud)). It's
+the *same API*, so the app just points at `https://ollama.com` and sends your
+[API key](https://ollama.com/settings/keys) as a bearer token. Trade-offs:
+
+| | Local | Ollama Cloud |
+|---|---|---|
+| Privacy | Fully on-device | Prompts sent to Ollama's servers |
+| Network | Offline | Requires internet + an API key |
+| Models | Limited by your RAM/GPU | Large models (e.g. `gpt-oss:120b`, `qwen3-coder:480b`) |
+| Cost | Free | Free tier + paid plans |
+
+When Cloud is enabled, type a cloud model name in the model fields. Embeddings
+(repo Q&A) may not be available on Cloud, so keep a local Ollama running with
+`nomic-embed-text` if you use repo search.
+
 ## Build & run (macOS)
 
 ```bash

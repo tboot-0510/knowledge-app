@@ -59,6 +59,8 @@ export default function Settings() {
     await setDailySchedule(settings.schedule_hour, settings.reminders_enabled);
     await setGlobalShortcut(settings.global_shortcut);
     setSaved(true);
+    // The model list comes from whichever endpoint is now active.
+    refreshModels();
   }
 
   return (
@@ -75,6 +77,49 @@ export default function Settings() {
           {healthy === null ? "Checking…" : healthy ? "Connected" : "Not reachable"}
         </span>
       </Field>
+
+      <Field label="Inference">
+        <div className="flex gap-2">
+          {([
+            ["Local", false],
+            ["Ollama Cloud", true],
+          ] as const).map(([label, cloud]) => (
+            <button
+              key={label}
+              onClick={() => patch("cloud_enabled", cloud)}
+              className={`flex-1 rounded-lg border px-3 py-1.5 text-xs transition ${
+                settings.cloud_enabled === cloud
+                  ? "border-accent/60 bg-accent/15 text-accent"
+                  : "border-black/[0.08] bg-black/[0.04] text-neutral-600"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-1 text-[11px] text-neutral-400">
+          {settings.cloud_enabled
+            ? "Runs large models on Ollama's servers. Needs an API key + internet; your prompts are sent to Ollama (not local/offline)."
+            : "Runs models on your machine — private, offline, and free, but limited by your hardware."}
+        </p>
+      </Field>
+
+      {settings.cloud_enabled && (
+        <Field label="Ollama Cloud API key">
+          <input
+            type="password"
+            value={settings.cloud_api_key}
+            onChange={(e) => patch("cloud_api_key", e.target.value)}
+            placeholder="Paste your key"
+            className="w-full rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 outline-none focus:border-accent/60"
+          />
+          <p className="mt-1 text-[11px] text-neutral-400">
+            Create one at <code>ollama.com/settings/keys</code>, then set a cloud
+            model name below (e.g. <code>gpt-oss:120b</code>,{" "}
+            <code>qwen3-coder:480b</code>). Save to refresh the model list.
+          </p>
+        </Field>
+      )}
 
       <Field label="Seniority level">
         <div className="flex gap-2">
@@ -98,6 +143,7 @@ export default function Settings() {
         <ModelSelect
           value={settings.chat_model}
           models={models}
+          cloud={settings.cloud_enabled}
           onChange={(v) => patch("chat_model", v)}
         />
       </Field>
@@ -106,6 +152,7 @@ export default function Settings() {
         <ModelSelect
           value={settings.mcq_model}
           models={models}
+          cloud={settings.cloud_enabled}
           onChange={(v) => patch("mcq_model", v)}
         />
       </Field>
@@ -114,17 +161,26 @@ export default function Settings() {
         <ModelSelect
           value={settings.embed_model}
           models={models}
+          cloud={settings.cloud_enabled}
           onChange={(v) => patch("embed_model", v)}
         />
+        {settings.cloud_enabled && (
+          <p className="mt-1 text-[11px] text-amber-700">
+            Embeddings (repo Q&amp;A) may not be available on Cloud — keep a local
+            Ollama running with an embedding model if you use repo search.
+          </p>
+        )}
       </Field>
 
-      <Field label="Ollama URL">
-        <input
-          value={settings.ollama_url}
-          onChange={(e) => patch("ollama_url", e.target.value)}
-          className="w-full rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 outline-none focus:border-accent/60"
-        />
-      </Field>
+      {!settings.cloud_enabled && (
+        <Field label="Ollama URL">
+          <input
+            value={settings.ollama_url}
+            onChange={(e) => patch("ollama_url", e.target.value)}
+            className="w-full rounded-lg border border-black/[0.08] bg-black/[0.04] px-3 py-2 outline-none focus:border-accent/60"
+          />
+        </Field>
+      )}
 
       <Field label="Daily popup hour (0–23)">
         <input
@@ -170,6 +226,13 @@ export default function Settings() {
       </button>
 
       <ModelManager onChanged={refreshModels} />
+
+      {/* Suggestions for the cloud model free-text input. */}
+      <datalist id="ollama-models">
+        {models.map((m) => (
+          <option key={m} value={m} />
+        ))}
+      </datalist>
     </div>
   );
 }
@@ -308,16 +371,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// Thuki-style dropdown: pick from the models actually installed in Ollama.
+// Pick from installed models (local) or type a cloud model name (cloud mode).
 function ModelSelect({
   value,
   models,
+  cloud,
   onChange,
 }: {
   value: string;
   models: string[];
+  cloud?: boolean;
   onChange: (v: string) => void;
 }) {
+  // Cloud model names vary and may not appear in /api/tags, so allow free text.
+  if (cloud) {
+    return (
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="e.g. gpt-oss:120b"
+        list="ollama-models"
+        className="w-full rounded-lg border border-black/[0.08] bg-white px-3 py-2 outline-none focus:border-accent/60"
+      />
+    );
+  }
   const notInstalled = !!value && !models.includes(value);
   return (
     <>

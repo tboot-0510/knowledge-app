@@ -50,7 +50,7 @@ pub async fn generate_coding_problem(
         (settings, category)
     };
 
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let prompt = build_problem_prompt(&category, difficulty);
     if let Ok(raw) = client.generate(&settings.chat_model, &prompt, true).await {
         if let Ok(p) = parse_problem(&category.slug, &raw) {
@@ -85,7 +85,7 @@ pub async fn review_solution(
         db.get_settings().map_err(|e| e.to_string())?
     };
 
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let prompt = build_review_prompt(&problem, &code, &language);
     let raw = client
         .generate(&settings.chat_model, &prompt, true)

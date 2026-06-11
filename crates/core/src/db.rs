@@ -115,6 +115,12 @@ impl Db {
                 .get_setting("onboarded")?
                 .map(|s| s == "true")
                 .unwrap_or(d.onboarded),
+            cloud_enabled: self
+                .get_setting("cloud_enabled")?
+                .map(|s| s == "true")
+                .unwrap_or(d.cloud_enabled),
+            cloud_api_key: self.get_setting("cloud_api_key")?.unwrap_or(d.cloud_api_key),
+            cloud_url: self.get_setting("cloud_url")?.unwrap_or(d.cloud_url),
         })
     }
 
@@ -128,6 +134,9 @@ impl Db {
         self.set_setting("reminders_enabled", if s.reminders_enabled { "true" } else { "false" })?;
         self.set_setting("global_shortcut", &s.global_shortcut)?;
         self.set_setting("onboarded", if s.onboarded { "true" } else { "false" })?;
+        self.set_setting("cloud_enabled", if s.cloud_enabled { "true" } else { "false" })?;
+        self.set_setting("cloud_api_key", &s.cloud_api_key)?;
+        self.set_setting("cloud_url", &s.cloud_url)?;
         Ok(())
     }
 

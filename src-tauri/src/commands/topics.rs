@@ -73,7 +73,7 @@ pub async fn add_custom_topic(state: State<'_, AppState>, name: String) -> Resul
         let db = state.db.lock().unwrap();
         db.get_settings().map_err(|e| e.to_string())?
     };
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let prompt = build_synthesis_prompt(&name);
     let raw = client
         .generate(&settings.chat_model, &prompt, true)

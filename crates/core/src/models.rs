@@ -261,6 +261,12 @@ pub struct Settings {
     pub global_shortcut: String,
     /// False until the user completes first-run onboarding.
     pub onboarded: bool,
+    /// Route inference to Ollama Cloud instead of the local server.
+    pub cloud_enabled: bool,
+    /// Ollama Cloud API key (from ollama.com/settings/keys). Sent as a bearer token.
+    pub cloud_api_key: String,
+    /// Ollama Cloud base URL (defaults to https://ollama.com).
+    pub cloud_url: String,
 }
 
 impl Default for Settings {
@@ -275,6 +281,34 @@ impl Default for Settings {
             reminders_enabled: true,
             global_shortcut: "CmdOrCtrl+Shift+K".to_string(),
             onboarded: false,
+            cloud_enabled: false,
+            cloud_api_key: String::new(),
+            cloud_url: "https://ollama.com".to_string(),
+        }
+    }
+}
+
+impl Settings {
+    /// The effective base URL for inference (cloud when enabled, else local).
+    pub fn effective_url(&self) -> String {
+        if self.cloud_enabled {
+            let u = self.cloud_url.trim();
+            if u.is_empty() {
+                "https://ollama.com".to_string()
+            } else {
+                u.to_string()
+            }
+        } else {
+            self.ollama_url.clone()
+        }
+    }
+
+    /// The bearer API key to send, if any (only in cloud mode).
+    pub fn effective_api_key(&self) -> Option<String> {
+        if self.cloud_enabled && !self.cloud_api_key.trim().is_empty() {
+            Some(self.cloud_api_key.clone())
+        } else {
+            None
         }
     }
 }

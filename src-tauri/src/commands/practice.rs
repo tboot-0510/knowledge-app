@@ -50,7 +50,7 @@ pub async fn generate_free_response(
         (settings, topic, difficulty)
     };
 
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let prompt = build_freeresponse_prompt(&topic, settings.level, difficulty);
     let raw = client
         .generate(&settings.chat_model, &prompt, true)
@@ -71,7 +71,7 @@ pub async fn grade_free_response(
         db.get_settings().map_err(|e| e.to_string())?
     };
 
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let prompt = build_grading_prompt(&question, &answer);
     let raw = client
         .generate(&settings.chat_model, &prompt, true)

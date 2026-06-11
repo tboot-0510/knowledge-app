@@ -41,7 +41,7 @@ pub async fn generate_weakness_report(
         (settings, build_weakness_prompt(&stats, &topics))
     };
 
-    let client = OllamaClient::new(&settings.ollama_url);
+    let client = OllamaClient::from_settings(&settings);
     let result = client
         .generate_stream(&settings.chat_model, &prompt, |chunk| {
             let _ = on_event.send(chunk);

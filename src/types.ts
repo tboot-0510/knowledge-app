@@ -109,6 +109,9 @@ export interface Settings {
   reminders_enabled: boolean;
   global_shortcut: string;
   onboarded: boolean;
+  cloud_enabled: boolean;
+  cloud_api_key: string;
+  cloud_url: string;
 }
 
 export interface ReviewItem {
